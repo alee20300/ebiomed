@@ -14,7 +14,7 @@ export async function AppHeader() {
   const user = await getCurrentUser()
 
   return (
-    <header className="flex h-16 items-center justify-between border-b bg-white px-4 lg:px-6">
+    <header className="flex h-16 items-center justify-between border-b bg-card px-4 lg:px-8">
       <div className="flex items-center gap-4">
         <Menu className="h-6 w-6 lg:hidden" />
         <Link href="/dashboard" className="text-lg font-semibold lg:hidden">
