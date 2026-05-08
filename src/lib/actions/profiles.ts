@@ -34,7 +34,7 @@ export async function signup(formData: FormData) {
   }
 
   if (data.user) {
-    await supabase.from("profiles").insert({
+    await supabase.schema("public").from("profiles").insert({
       id: data.user.id,
       full_name: fullName,
       role: "technician",
@@ -57,6 +57,7 @@ export async function getCurrentUser() {
   if (!user) return null
 
   const { data: profile } = await supabase
+    .schema("public")
     .from("profiles")
     .select("*")
     .eq("id", user.id)

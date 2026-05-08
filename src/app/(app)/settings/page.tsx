@@ -20,6 +20,7 @@ import type { Profile } from "@/lib/types"
 async function UsersList() {
   const supabase = await createClient()
   const { data } = await supabase
+    .schema("public")
     .from("profiles")
     .select("*")
     .order("full_name")
