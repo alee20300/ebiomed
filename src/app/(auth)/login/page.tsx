@@ -34,6 +34,7 @@ export default function LoginPage() {
               <Input id="password" name="password" type="password" required minLength={6} />
             </div>
             <Button
+              type="submit"
               formAction={isSignup ? signup : login}
               className="w-full"
             >
