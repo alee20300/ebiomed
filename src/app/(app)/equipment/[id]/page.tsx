@@ -5,7 +5,9 @@ import { getEquipmentById } from "@/lib/actions/equipment"
 import { EquipmentInfoTab } from "@/components/equipment/equipment-info-tab"
 import { EquipmentHistoryTab } from "@/components/equipment/equipment-history-tab"
 import { EquipmentPMTab } from "@/components/equipment/equipment-pm-tab"
+import { BarcodeDisplay } from "@/components/report/barcode-display"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { StatusBadge } from "@/components/shared/status-badge"
@@ -63,6 +65,16 @@ export default async function EquipmentDetailPage({
           </Suspense>
         </TabsContent>
       </Tabs>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Barcode</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center">
+          <BarcodeDisplay value={equipment.tag_number} />
+          <p className="mt-2 text-xs text-gray-500">Scan to report a fault or print for equipment label</p>
+        </CardContent>
+      </Card>
     </div>
   )
 }
