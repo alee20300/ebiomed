@@ -30,7 +30,7 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const url = request.nextUrl
-  const isAuthRoute = url.pathname.startsWith("/login") || url.pathname.startsWith("/auth")
+  const isAuthRoute = url.pathname.startsWith("/login") || url.pathname.startsWith("/auth") || url.pathname.startsWith("/report")
   const isPublicFile = url.pathname.startsWith("/_next") || url.pathname.includes(".")
 
   if (isPublicFile) {
