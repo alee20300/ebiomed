@@ -1,0 +1,120 @@
+"use server"
+
+import { revalidatePath } from "next/cache"
+import { redirect } from "next/navigation"
+import { createClient } from "@/lib/supabase/server"
+import { pmScheduleSchema } from "@/lib/schemas/pm-schedule"
+import { getCurrentUser } from "@/lib/actions/profiles"
+import type { PMSchedule } from "@/lib/types"
+import { addDays } from "date-fns"
+
+export async function createPMSchedule(formData: FormData) {
+  const supabase = await createClient()
+  const raw = Object.fromEntries(formData)
+
+  const parsed = pmScheduleSchema.safeParse(raw)
+  if (!parsed.success) {
+    const messages = parsed.error.errors.map((e) => e.message).join(", ")
+    return redirect(`/pm-schedules?error=${encodeURIComponent(messages)}`)
+  }
+
+  const nextDue = addDays(new Date(), parsed.data.frequency_days).toISOString()
+
+  const { error } = await supabase.from("pm_schedules").insert({
+    ...parsed.data,
+    checklist: JSON.stringify(parsed.data.checklist),
+    next_due: nextDue,
+  })
+
+  if (error) {
+    return redirect(`/pm-schedules?error=${encodeURIComponent(error.message)}`)
+  }
+
+  revalidatePath("/pm-schedules")
+  revalidatePath("/dashboard")
+  redirect("/pm-schedules")
+}
+
+export async function getPMSchedules(): Promise<PMSchedule[]> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from("pm_schedules")
+    .select("*, equipment(*)")
+    .order("next_due", { ascending: true })
+
+  return (data || []) as unknown as PMSchedule[]
+}
+
+export async function getPMScheduleById(id: string): Promise<PMSchedule | null> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from("pm_schedules")
+    .select("*, equipment(*)")
+    .eq("id", id)
+    .single()
+
+  return data as unknown as PMSchedule
+}
+
+export async function startPMTask(pmScheduleId: string) {
+  const supabase = await createClient()
+  const user = await getCurrentUser()
+  if (!user) return redirect("/login")
+
+  const { data: pm } = await supabase
+    .from("pm_schedules")
+    .select("*, equipment(*)")
+    .eq("id", pmScheduleId)
+    .single()
+
+  if (!pm) {
+    return redirect("/pm-schedules?error=PM schedule not found")
+  }
+
+  const { data: wo, error } = await supabase
+    .from("work_orders")
+    .insert({
+      equipment_id: pm.equipment_id,
+      type: "preventive",
+      priority: "medium",
+      status: "in_progress",
+      description: pm.description || `PM: ${pm.equipment?.name || "Equipment"} (${pm.frequency_days} day cycle)`,
+      assigned_to: pm.assigned_to || user.id,
+      created_by: user.id,
+      started_at: new Date().toISOString(),
+    })
+    .select()
+    .single()
+
+  if (error) {
+    return redirect(`/pm-schedules?error=${encodeURIComponent(error.message)}`)
+  }
+
+  revalidatePath("/work-orders")
+  revalidatePath("/pm-schedules")
+  redirect(`/work-orders/${wo.id}`)
+}
+
+export async function completePMTask(workOrderId: string, pmScheduleId: string) {
+  const supabase = await createClient()
+
+  const now = new Date().toISOString()
+
+  const { data: pm } = await supabase
+    .from("pm_schedules")
+    .select("frequency_days")
+    .eq("id", pmScheduleId)
+    .single()
+
+  const next = pm
+    ? addDays(new Date(), pm.frequency_days).toISOString()
+    : addDays(new Date(), 90).toISOString()
+
+  await supabase
+    .from("pm_schedules")
+    .update({ last_completed: now, next_due: next })
+    .eq("id", pmScheduleId)
+
+  revalidatePath("/pm-schedules")
+  revalidatePath("/dashboard")
+}
