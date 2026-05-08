@@ -8,7 +8,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       <Sidebar />
       <div className="flex flex-1 flex-col">
         <AppHeader />
-        <main className="flex-1 overflow-auto bg-gray-50 p-4 pb-20 lg:p-6 lg:pb-6">
+        <main className="flex-1 overflow-auto bg-background p-8 pb-20 lg:p-8 lg:pb-8">
           {children}
         </main>
       </div>
