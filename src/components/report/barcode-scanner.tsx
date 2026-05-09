@@ -27,6 +27,19 @@ export function BarcodeScanner() {
         (decodedText) => {
           scanner.stop()
           setMode("idle")
+          // If the scanned text is a URL, extract the tag parameter
+          if (decodedText.startsWith("http://") || decodedText.startsWith("https://")) {
+            try {
+              const url = new URL(decodedText)
+              const tag = url.searchParams.get("tag")
+              if (tag) {
+                router.push(`/report?tag=${encodeURIComponent(tag)}`)
+                return
+              }
+            } catch {
+              // Not a valid URL, fall through to treat as tag
+            }
+          }
           router.push(`/report?tag=${encodeURIComponent(decodedText)}`)
         },
         () => {}
