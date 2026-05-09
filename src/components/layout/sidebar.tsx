@@ -6,15 +6,24 @@ import { cn } from "@/lib/utils"
 import { NAV_ITEMS } from "@/lib/utils/constants"
 import {
   LayoutDashboard, Wrench, ClipboardList, CalendarCheck,
-  Package, BarChart3, Settings
+  Package, BarChart3, Settings, ClipboardCheck
 } from "lucide-react"
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  LayoutDashboard, Wrench, ClipboardList, CalendarCheck, Package, BarChart3, Settings,
+  LayoutDashboard, Wrench, ClipboardList, CalendarCheck, Package, BarChart3, Settings, ClipboardCheck,
 }
 
-export function Sidebar() {
+interface SidebarProps {
+  role?: string
+}
+
+export function Sidebar({ role = "viewer" }: SidebarProps) {
   const pathname = usePathname()
+
+  const visibleItems = NAV_ITEMS.filter((item) => {
+    if (role === "viewer" && item.href === "/settings") return false
+    return true
+  })
 
   return (
     <aside className="hidden h-screen w-64 flex-col border-r bg-card lg:flex">
@@ -24,7 +33,7 @@ export function Sidebar() {
         </Link>
       </div>
       <nav className="flex flex-1 flex-col gap-1 px-4 py-4">
-        {NAV_ITEMS.map((item) => {
+        {visibleItems.map((item) => {
           const Icon = iconMap[item.icon]
           const isActive = pathname === item.href || pathname.startsWith(item.href + "/")
           return (

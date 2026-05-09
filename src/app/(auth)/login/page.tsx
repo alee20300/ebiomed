@@ -18,7 +18,7 @@ export default function LoginPage() {
           <p className="text-sm text-muted-foreground">Biomedical Maintenance Management</p>
         </CardHeader>
         <CardContent>
-          <form className="space-y-4">
+          <form action={isSignup ? signup : login} className="space-y-4">
             {isSignup && (
               <div>
                 <Label htmlFor="fullName">Full Name</Label>
@@ -35,7 +35,6 @@ export default function LoginPage() {
             </div>
             <Button
               type="submit"
-              formAction={isSignup ? signup : login}
               className="w-full"
             >
               {isSignup ? "Create Account" : "Sign In"}

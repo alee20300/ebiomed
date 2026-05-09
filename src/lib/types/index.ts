@@ -87,3 +87,12 @@ export interface Profile {
   phone: string | null
   created_at: string
 }
+
+export interface WoComment {
+  id: string
+  work_order_id: string
+  author_id: string
+  text: string
+  created_at: string
+  author?: { full_name: string; role: string } | null
+}

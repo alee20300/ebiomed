@@ -1,6 +1,7 @@
 import Link from "next/link"
 import { CheckCircle } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default async function ReportSuccessPage({
@@ -24,9 +25,7 @@ export default async function ReportSuccessPage({
             <p className="font-mono text-sm text-gray-500">Work Order: {params.wo.slice(0, 8)}</p>
           )}
           <div className="flex justify-center gap-3">
-            <Button asChild variant="outline">
-              <Link href="/report">Report Another</Link>
-            </Button>
+            <Link href="/report" className={cn(buttonVariants({ variant: "outline" }))}>Report Another</Link>
           </div>
         </CardContent>
       </Card>

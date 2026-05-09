@@ -12,22 +12,43 @@ export async function createPMSchedule(formData: FormData) {
   const supabase = await createClient()
   const raw = Object.fromEntries(formData)
 
-  const parsed = pmScheduleSchema.safeParse(raw)
+  const checklistRaw = (formData.get("checklist") as string) || ""
+  const checklist = checklistRaw
+    .split("\n")
+    .map((text, index) => ({
+      id: `check-${index}`,
+      text: text.trim(),
+      completed: false,
+    }))
+    .filter((item) => item.text.length > 0)
+
+  const activeRaw = formData.get("active")
+  const active = activeRaw === "true"
+
+  const parsed = pmScheduleSchema.safeParse({
+    ...raw,
+    checklist,
+    active,
+  })
   if (!parsed.success) {
     const messages = parsed.error.errors.map((e) => e.message).join(", ")
-    return redirect(`/pm-schedules?error=${encodeURIComponent(messages)}`)
+    return redirect(`/pm-schedules/new?error=${encodeURIComponent(messages)}`)
   }
 
   const nextDue = addDays(new Date(), parsed.data.frequency_days).toISOString()
 
   const { error } = await supabase.from("pm_schedules").insert({
-    ...parsed.data,
-    checklist: JSON.stringify(parsed.data.checklist),
+    equipment_id: parsed.data.equipment_id,
+    frequency_days: parsed.data.frequency_days,
+    description: parsed.data.description,
+    checklist,
+    assigned_to: parsed.data.assigned_to || null,
+    active: parsed.data.active,
     next_due: nextDue,
   })
 
   if (error) {
-    return redirect(`/pm-schedules?error=${encodeURIComponent(error.message)}`)
+    return redirect(`/pm-schedules/new?error=${encodeURIComponent(error.message)}`)
   }
 
   revalidatePath("/pm-schedules")

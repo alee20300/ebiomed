@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - eBiomed</title>
+  <style>
+    :root {
+      --bg: oklch(98% 0.005 250);
+      --surface: oklch(100% 0 0);
+      --fg: oklch(22% 0.02 240);
+      --muted: oklch(50% 0.018 240);
+      --border: oklch(90% 0.008 240);
+      --accent: #2563eb;
+      --success: oklch(58% 0.16 145);
+      --warning: oklch(75% 0.18 85);
+      --danger: oklch(65% 0.22 25);
+      --info: oklch(70% 0.15 230);
+      --radius: 8px;
+      --font: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font); background: var(--bg); color: var(--fg); padding: 0; }
+    h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .stat-card { padding: 1.25rem; }
+    .stat-card .label { font-size: 0.8125rem; color: var(--muted); font-weight: 500; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+    .stat-card .value { font-size: 2rem; font-weight: 700; }
+    .stat-card .icon { width: 20px; height: 20px; }
+    .alerts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .alert-panel { padding: 1rem; }
+    .alert-panel.red { background: oklch(96% 0.03 25); border-color: oklch(88% 0.06 25); }
+    .alert-panel.yellow { background: oklch(97% 0.04 85); border-color: oklch(90% 0.08 85); }
+    .alert-header { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; margin-bottom: 0.75rem; font-size: 0.875rem; }
+    .alert-item { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--border); font-size: 0.875rem; }
+    .alert-item:last-child { border-bottom: none; }
+    .activity { padding: 0; }
+    .activity-header { padding: 1rem; border-bottom: 1px solid var(--border); font-weight: 600; font-size: 0.9375rem; }
+    .activity-item { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; border-bottom: 1px solid var(--border); font-size: 0.875rem; }
+    .activity-item:last-child { border-bottom: none; }
+    .badge { display: inline-block; padding: 0.2rem 0.625rem; border-radius: 9999px; font-weight: 500; font-size: 0.6875rem; text-transform: capitalize; }
+    .badge-green { background: oklch(95% 0.05 145); color: oklch(40% 0.15 145); }
+    .badge-blue { background: oklch(95% 0.05 250); color: #2563eb; }
+    .badge-yellow { background: oklch(95% 0.05 85); color: oklch(50% 0.18 85); }
+    .badge-red { background: oklch(95% 0.03 25); color: oklch(50% 0.2 25); }
+    .badge-gray { background: var(--border); color: var(--muted); }
+    .empty { text-align: center; padding: 2rem; color: var(--muted); font-size: 0.875rem; }
+    @media (max-width: 900px) { .stats { grid-template-columns: repeat(2, 1fr); } .alerts { grid-template-columns: 1fr; } }
+    @media (max-width: 500px) { .stats { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <h2>Dashboard</h2>
+
+  <!-- Stat Cards -->
+  <div class="stats">
+    <div class="card stat-card">
+      <div class="label"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> Total Equipment</div>
+      <div class="value">10</div>
+    </div>
+    <div class="card stat-card">
+      <div class="label"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="oklch(65% 0.18 50)" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Open Work Orders</div>
+      <div class="value">3</div>
+    </div>
+    <div class="card stat-card">
+      <div class="label"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="oklch(55% 0.21 25)" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Overdue PMs</div>
+      <div class="value">2</div>
+    </div>
+    <div class="card stat-card">
+      <div class="label"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="oklch(70% 0.16 85)" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg> Low Stock Parts</div>
+      <div class="value">4</div>
+    </div>
+  </div>
+
+  <!-- Alert Panels -->
+  <div class="alerts">
+    <div class="card alert-panel red">
+      <div class="alert-header" style="color: oklch(45% 0.18 25)">⚠ Overdue PMs</div>
+      <div class="alert-item"><span>Ventilator V500</span><span style="color: var(--muted); font-size: 0.8rem;">Due: Mar 15, 2026</span></div>
+      <div class="alert-item"><span>Pulse Oximeter</span><span style="color: var(--muted); font-size: 0.8rem;">Due: Apr 2, 2026</span></div>
+    </div>
+    <div class="card alert-panel yellow">
+      <div class="alert-header" style="color: oklch(55% 0.16 85)">⚠ Low Stock Parts</div>
+      <div class="alert-item"><span>SpO2 Probe</span><span style="color: var(--muted); font-size: 0.8rem;">5 / min 8</span></div>
+      <div class="alert-item"><span>Ventilator Filter</span><span style="color: var(--muted); font-size: 0.8rem;">3 / min 8</span></div>
+    </div>
+  </div>
+
+  <!-- Activity Feed -->
+  <div class="card activity">
+    <div class="activity-header">Recent Activity</div>
+    <div class="activity-item">
+      <div><strong>Patient Monitor</strong><br><span style="color: var(--muted); font-size: 0.8rem;">Display flickering intermittently</span></div>
+      <span class="badge badge-green">open</span>
+    </div>
+    <div class="activity-item">
+      <div><strong>Anesthesia Machine</strong><br><span style="color: var(--muted); font-size: 0.8rem;">Leak in circuit detected</span></div>
+      <span class="badge badge-yellow">in progress</span>
+    </div>
+    <div class="activity-item">
+      <div><strong>Defibrillator</strong><br><span style="color: var(--muted); font-size: 0.8rem;">Routine PM completed</span></div>
+      <span class="badge badge-blue">completed</span>
+    </div>
+    <div class="activity-item">
+      <div><strong>Infusion Pump</strong><br><span style="color: var(--muted); font-size: 0.8rem;">Flow rate inconsistent</span></div>
+      <span class="badge badge-blue">open</span>
+    </div>
+  </div>
+</body>
+</html>

@@ -19,6 +19,7 @@ export function WorkOrderForm({ preselectedEquipmentId }: { preselectedEquipment
   const searchParams = useSearchParams()
   const error = searchParams.get("error")
   const [equipment, setEquipment] = useState<Equipment[]>([])
+  const [technicians, setTechnicians] = useState<Array<{ id: string; full_name: string; role: string }>>([])
   const supabase = createClient()
 
   useEffect(() => {
@@ -28,10 +29,18 @@ export function WorkOrderForm({ preselectedEquipmentId }: { preselectedEquipment
       .neq("status", "retired")
       .order("name")
       .then(({ data }) => setEquipment((data || []) as Equipment[]))
+
+    supabase
+      .schema("public")
+      .from("profiles")
+      .select("id, full_name, role")
+      .in("role", ["technician", "admin"])
+      .order("full_name")
+      .then(({ data }) => setTechnicians((data as any) || []))
   }, [supabase])
 
   return (
-    <form className="space-y-6">
+    <form action={createWorkOrder} className="space-y-6">
       {error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -91,8 +100,25 @@ export function WorkOrderForm({ preselectedEquipmentId }: { preselectedEquipment
         />
       </div>
 
+      <div>
+        <Label htmlFor="assigned_to">Assign To</Label>
+        <Select name="assigned_to">
+          <SelectTrigger>
+            <SelectValue placeholder="Unassigned" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">Unassigned</SelectItem>
+            {technicians.map((tech) => (
+              <SelectItem key={tech.id} value={tech.id}>
+                {tech.full_name} ({tech.role})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="flex gap-3">
-        <Button formAction={createWorkOrder} type="submit">
+        <Button type="submit">
           Create Work Order
         </Button>
         <Button variant="outline" type="button" onClick={() => history.back()}>

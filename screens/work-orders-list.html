@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Work Orders - eBiomed</title>
+  <style>
+    :root { --bg: oklch(98% 0.005 250); --surface: oklch(100% 0 0); --fg: oklch(22% 0.02 240); --muted: oklch(50% 0.018 240); --border: oklch(90% 0.008 240); --accent: #2563eb; --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif; }
+    *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:var(--font); background:var(--bg); color:var(--fg); }
+    .page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; }
+    h2 { font-size:1.5rem; font-weight:700; }
+    .btn { display:inline-flex; align-items:center; gap:0.5rem; font-weight:500; padding:0.5rem 1rem; border-radius:var(--radius); border:1px solid transparent; cursor:pointer; font-size:0.875rem; text-decoration:none; }
+    .btn-primary { background:var(--accent); color:white; }
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); }
+    table { width:100%; border-collapse:collapse; font-size:0.875rem; }
+    th,td { padding:0.75rem 1rem; text-align:left; border-bottom:1px solid var(--border); }
+    th { color:var(--muted); font-weight:500; text-transform:uppercase; font-size:0.6875rem; letter-spacing:0.05em; }
+    tbody tr:hover { background:var(--bg); }
+    a { color:var(--accent); text-decoration:none; font-weight:500; }
+    .badge { display:inline-block; padding:0.2rem 0.625rem; border-radius:9999px; font-weight:500; font-size:0.6875rem; text-transform:capitalize; }
+    .badge-green { background:oklch(95% 0.05 145); color:oklch(40% 0.15 145); }
+    .badge-blue { background:oklch(95% 0.05 250); color:var(--accent); }
+    .badge-yellow { background:oklch(95% 0.05 85); color:oklch(50% 0.18 85); }
+    .badge-orange { background:oklch(95% 0.08 55); color:oklch(50% 0.18 55); }
+    .badge-red { background:oklch(95% 0.03 25); color:oklch(50% 0.2 25); }
+    .type-tag { font-size:0.625rem; color:var(--muted); text-transform:uppercase; font-weight:600; letter-spacing:0.05em; }
+  </style>
+</head>
+<body>
+  <div class="page-header"><h2>Work Orders</h2><a href="work-orders-new.html" class="btn btn-primary">+ New Work Order</a></div>
+  <div class="card" style="overflow-x:auto">
+    <table>
+      <thead><tr><th>Equipment</th><th>Type</th><th>Priority</th><th>Status</th><th>Description</th><th>Created</th></tr></thead>
+      <tbody>
+        <tr><td><a href="work-orders-detail.html">Patient Monitor</a></td><td><span class="type-tag">corrective</span></td><td><span class="badge badge-blue">medium</span></td><td><span class="badge badge-green">open</span></td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Display flickering intermittently</td><td style="font-size:0.75rem;color:var(--muted)">2 hours ago</td></tr>
+        <tr><td><a href="work-orders-detail.html">Anesthesia Machine</a></td><td><span class="type-tag">corrective</span></td><td><span class="badge badge-orange">high</span></td><td><span class="badge badge-yellow">in progress</span></td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Leak in circuit detected</td><td style="font-size:0.75rem;color:var(--muted)">5 hours ago</td></tr>
+        <tr><td><a href="work-orders-detail.html">Defibrillator</a></td><td><span class="type-tag">preventive</span></td><td><span class="badge badge-blue">medium</span></td><td><span class="badge badge-blue">completed</span></td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Routine PM completed</td><td style="font-size:0.75rem;color:var(--muted)">1 day ago</td></tr>
+        <tr><td><a href="work-orders-detail.html">Infusion Pump</a></td><td><span class="type-tag">corrective</span></td><td><span class="badge badge-orange">high</span></td><td><span class="badge badge-green">open</span></td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Flow rate inconsistent</td><td style="font-size:0.75rem;color:var(--muted)">1 day ago</td></tr>
+      </tbody>
+    </table>
+  </div>
+</body>
+</html>

@@ -2,7 +2,8 @@ import Link from "next/link"
 import { Suspense } from "react"
 import { getEquipment } from "@/lib/actions/equipment"
 import { EquipmentTable } from "@/components/equipment/equipment-table"
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Plus } from "lucide-react"
 
@@ -26,12 +27,10 @@ export default function EquipmentPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold tracking-tight">Equipment</h2>
-        <Button asChild>
-          <Link href="/equipment/new">
-            <Plus className="mr-2 h-4 w-4" />
-            Add Equipment
-          </Link>
-        </Button>
+        <Link href="/equipment/new" className={cn(buttonVariants({}))}>
+          <Plus className="mr-2 h-4 w-4" />
+          Add Equipment
+        </Link>
       </div>
       <Suspense fallback={<EquipmentListLoading />}>
         <EquipmentList />

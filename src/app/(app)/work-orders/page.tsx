@@ -2,7 +2,8 @@ import Link from "next/link"
 import { Suspense } from "react"
 import { getWorkOrders } from "@/lib/actions/work-orders"
 import { WorkOrderTable } from "@/components/work-orders/wo-table"
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Plus } from "lucide-react"
 
@@ -26,12 +27,10 @@ export default function WorkOrdersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold tracking-tight">Work Orders</h2>
-        <Button asChild>
-          <Link href="/work-orders/new">
-            <Plus className="mr-2 h-4 w-4" />
-            New Work Order
-          </Link>
-        </Button>
+        <Link href="/work-orders/new" className={cn(buttonVariants({}))}>
+          <Plus className="mr-2 h-4 w-4" />
+          New Work Order
+        </Link>
       </div>
       <Suspense fallback={<Loading />}>
         <WOList />

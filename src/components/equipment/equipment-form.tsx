@@ -22,7 +22,7 @@ export function EquipmentForm({ equipment }: Props) {
   const error = searchParams.get("error")
 
   return (
-    <form className="space-y-6">
+    <form action={equipment ? updateEquipment.bind(null, equipment.id) : createEquipment} className="space-y-6">
       {error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -143,7 +143,6 @@ export function EquipmentForm({ equipment }: Props) {
 
       <div className="flex gap-3">
         <Button
-          formAction={equipment ? updateEquipment.bind(null, equipment.id) : createEquipment}
           type="submit"
         >
           {equipment ? "Update Equipment" : "Create Equipment"}

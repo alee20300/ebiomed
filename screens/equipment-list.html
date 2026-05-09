@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Equipment - eBiomed</title>
+  <style>
+    :root {
+      --bg: oklch(98% 0.005 250); --surface: oklch(100% 0 0); --fg: oklch(22% 0.02 240);
+      --muted: oklch(50% 0.018 240); --border: oklch(90% 0.008 240); --accent: #2563eb;
+      --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: var(--font); background: var(--bg); color: var(--fg); }
+    .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    h2 { font-size: 1.5rem; font-weight: 700; }
+    .btn { display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 500; padding: 0.5rem 1rem; border-radius: var(--radius); border: 1px solid transparent; cursor: pointer; font-size: 0.875rem; transition: all 150ms; }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { filter: brightness(1.1); }
+    .btn-outline { background: transparent; color: var(--fg); border-color: var(--border); }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .search-bar { padding: 0.625rem 0.75rem; border: 1px solid var(--border); border-radius: var(--radius); width: 100%; max-width: 320px; font-size: 0.875rem; margin-bottom: 1rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 500; text-transform: uppercase; font-size: 0.6875rem; letter-spacing: 0.05em; }
+    tbody tr:hover { background: var(--bg); }
+    a { color: var(--accent); text-decoration: none; font-weight: 500; }
+    a:hover { text-decoration: underline; }
+    .badge { display: inline-block; padding: 0.2rem 0.625rem; border-radius: 9999px; font-weight: 500; font-size: 0.6875rem; text-transform: capitalize; }
+    .badge-green { background: oklch(95% 0.05 145); color: oklch(40% 0.15 145); }
+    .badge-purple { background: oklch(95% 0.05 250); color: oklch(45% 0.15 250); }
+    .badge-red { background: oklch(95% 0.03 25); color: oklch(50% 0.2 25); }
+    .badge-gray { background: var(--border); color: var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="page-header">
+    <h2>Equipment</h2>
+    <a href="equipment-new.html" class="btn btn-primary">+ Add Equipment</a>
+  </div>
+  <input class="search-bar" type="text" placeholder="Search equipment..." oninput="filterTable(this.value)">
+  <div class="card" style="overflow-x:auto">
+    <table id="eqTable">
+      <thead><tr><th>Tag #</th><th>Name</th><th>Manufacturer</th><th>Department</th><th>Location</th><th>Status</th><th>Installed</th></tr></thead>
+      <tbody>
+        <tr><td><a href="equipment-detail.html">BM-001</a></td><td>Ventilator V500</td><td>Dräger</td><td>ICU</td><td>ICU Room 3</td><td><span class="badge badge-green">active</span></td><td>Jan 15, 2024</td></tr>
+        <tr><td><a href="equipment-detail.html">BM-002</a></td><td>Infusion Pump</td><td>Baxter</td><td>Med-Surg</td><td>Ward 2A</td><td><span class="badge badge-green">active</span></td><td>Mar 10, 2024</td></tr>
+        <tr><td><a href="equipment-detail.html">BM-003</a></td><td>Patient Monitor</td><td>Philips</td><td>ER</td><td>ER Bay 5</td><td><span class="badge badge-green">active</span></td><td>Jun 20, 2023</td></tr>
+        <tr><td><a href="equipment-detail.html">BM-004</a></td><td>Defibrillator</td><td>Stryker</td><td>ER</td><td>ER Bay 1</td><td><span class="badge badge-green">active</span></td><td>Jan 5, 2023</td></tr>
+        <tr><td><a href="equipment-detail.html">BM-005</a></td><td>Anesthesia Machine</td><td>Mindray</td><td>OR</td><td>OR Suite 2</td><td><span class="badge badge-green">active</span></td><td>Feb 1, 2024</td></tr>
+        <tr><td><a href="equipment-detail.html">BM-009</a></td><td>Pulse Oximeter</td><td>Masimo</td><td>Med-Surg</td><td>Ward 3B</td><td><span class="badge badge-purple">under repair</span></td><td>May 10, 2023</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <script>function filterTable(q) { document.querySelectorAll('#eqTable tbody tr').forEach(r => { r.style.display = r.textContent.toLowerCase().includes(q.toLowerCase()) ? '' : 'none'; }); }</script>
+</body>
+</html>

@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>eBiomed</title>
+  <style>
+    :root {
+      --bg:      oklch(98% 0.005 250);
+      --surface: oklch(100% 0 0);
+      --fg:      oklch(22% 0.02 240);
+      --muted:   oklch(50% 0.018 240);
+      --border:  oklch(90% 0.008 240);
+      --accent:  #2563eb; /* blue-600 */
+
+      --accent-fg: oklch(100% 0 0);
+
+      --success: oklch(58% 0.16 145);
+      --warning: oklch(75% 0.18 85);
+      --danger:  oklch(65% 0.22 25);
+      --info:    oklch(70% 0.15 230);
+
+
+      --font-display: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+      --font-body:    -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif;
+      --font-mono:    'JetBrains Mono', 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+
+      --radius: 8px;
+    }
+
+    /* Reset & Base */
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; height: 100%; }
+    body {
+      font-family: var(--font-body);
+      background-color: var(--bg);
+      color: var(--fg);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    h1, h2, h3, h4, h5, h6 { font-family: var(--font-display); margin: 0; font-weight: 600; }
+
+    /* App Shell */
+    .app-shell {
+      display: flex;
+      height: 100vh;
+    }
+    .sidebar {
+      width: 256px;
+      background-color: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 1.5rem 1rem;
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar-header {
+        padding: 0 0.5rem 1.5rem 0.5rem;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--accent);
+    }
+    .sidebar-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+    .sidebar-nav a {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem;
+        border-radius: var(--radius);
+        color: var(--muted);
+        font-weight: 500;
+        text-decoration: none;
+    }
+    .sidebar-nav a:hover {
+        background-color: var(--bg);
+        color: var(--fg);
+    }
+    .sidebar-nav a.active {
+        background-color: oklch(from var(--accent) 95% 0.02 h);
+        color: var(--accent);
+        font-weight: 600;
+    }
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    .main-header {
+      padding: 1rem 2rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      background-color: var(--surface);
+    }
+    .content-area {
+      flex: 1;
+      padding: 2rem;
+    }
+    .content-area iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+        background-color: var(--bg);
+    }
+
+    /* Mobile Nav */
+    .mobile-header, .mobile-bottom-nav { display: none; }
+
+
+    /* Shared Components */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 500;
+        padding: 0.5rem 1rem;
+        border-radius: var(--radius);
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: all 150ms ease-in-out;
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+    }
+    .btn-primary {
+        background-color: var(--accent);
+        color: var(--accent-fg);
+        border-color: var(--accent);
+    }
+    .btn-primary:hover { filter: brightness(1.1); }
+    .btn-outline {
+        background-color: transparent;
+        color: var(--fg);
+        border-color: var(--border);
+    }
+    .btn-outline:hover { background-color: var(--bg); }
+    .badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        font-weight: 500;
+        font-size: 0.75rem;
+        text-transform: capitalize;
+    }
+    /* Status Badges */
+    .badge-green { background-color: oklch(from var(--success) 95% 0.05 h); color: oklch(from var(--success) 40% 0.15 h); }
+    .badge-gray { background-color: var(--border); color: var(--muted); }
+    .badge-red { background-color: oklch(from var(--danger) 95% 0.05 h); color: oklch(from var(--danger) 50% 0.2 h); }
+    .badge-purple { background-color: oklch(from var(--info) 95% 0.05 250); color: oklch(from var(--info) 50% 0.15 250); }
+    /* Priority Badges */
+    .badge-blue { background-color: oklch(from var(--accent) 95% 0.05 h); color: var(--accent); }
+    .badge-yellow { background-color: oklch(from var(--warning) 95% 0.05 h); color: oklch(from var(--warning) 50% 0.18 h); }
+    .badge-orange { background-color: oklch(from var(--warning) 92% 0.08 60); color: oklch(from var(--warning) 50% 0.18 50); }
+
+    .card {
+        background-color: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);
+    }
+
+    .table-wrapper { overflow-x: auto; }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.875rem;
+    }
+    th, td {
+        padding: 0.75rem 1rem;
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+    }
+    th {
+        color: var(--muted);
+        font-weight: 500;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover { background-color: var(--bg); }
+
+    .form-input {
+      display: block;
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background-color: var(--surface);
+      color: var(--fg);
+      font-size: 0.875rem;
+    }
+    .form-input:focus {
+        outline: 2px solid var(--accent);
+        outline-offset: -1px;
+        border-color: var(--accent);
+    }
+    .form-label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 1023px) {
+      .sidebar { display: none; }
+      .main-header { display: none; }
+
+      .mobile-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1rem;
+        background-color: var(--surface);
+        border-bottom: 1px solid var(--border);
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 64px;
+        z-index: 10;
+      }
+      .mobile-header .logo { font-size: 1.25rem; font-weight: 700; color: var(--accent); }
+
+      .mobile-bottom-nav {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 64px;
+        background-color: var(--surface);
+        border-top: 1px solid var(--border);
+        z-index: 10;
+      }
+      .mobile-bottom-nav a {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.25rem;
+        font-size: 0.75rem;
+        color: var(--muted);
+        text-decoration: none;
+        padding: 0.5rem;
+      }
+       .mobile-bottom-nav a.active {
+        color: var(--accent);
+       }
+
+      .app-shell {
+        flex-direction: column;
+      }
+
+      .main-content {
+        padding-top: 64px;
+        padding-bottom: 64px;
+      }
+      .content-area {
+        padding: 1rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <!-- Desktop Sidebar -->
+    <aside class="sidebar">
+      <header class="sidebar-header">eBiomed</header>
+      <nav class="sidebar-nav">
+        <a href="screens/dashboard.html" target="content-frame" class="active" onclick="setActive(this)">Dashboard</a>
+        <a href="screens/equipment-list.html" target="content-frame" onclick="setActive(this)">Equipment</a>
+        <a href="screens/work-orders-list.html" target="content-frame" onclick="setActive(this)">Work Orders</a>
+        <a href="screens/pm-schedules-list.html" target="content-frame" onclick="setActive(this)">PM Schedule</a>
+        <a href="screens/parts-list.html" target="content-frame" onclick="setActive(this)">Parts</a>
+        <a href="screens/reports.html" target="content-frame" onclick="setActive(this)">Reports</a>
+        <a href="screens/settings.html" target="content-frame" onclick="setActive(this)">Settings</a>
+      </nav>
+    </aside>
+
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+      <div class="logo">eBiomed</div>
+      <button class="btn btn-outline">Menu</button>
+    </header>
+
+    <main class="main-content">
+      <!-- Desktop Header -->
+      <header class="main-header">
+        <a href="screens/login.html" target="content-frame" class="btn btn-outline" onclick="showLogin()">Sign Out</a>
+      </header>
+      <div class="content-area">
+        <iframe name="content-frame" src="screens/dashboard.html" title="eBiomed application content"></iframe>
+      </div>
+    </main>
+
+    <!-- Mobile Bottom Nav -->
+    <nav class="mobile-bottom-nav">
+      <a href="screens/dashboard.html" target="content-frame" class="active" onclick="setMobileActive(this)">Home</a>
+      <a href="screens/equipment-list.html" target="content-frame" onclick="setMobileActive(this)">Equip</a>
+      <a href="screens/work-orders-list.html" target="content-frame" onclick="setMobileActive(this)">WOs</a>
+      <a href="screens/pm-schedules-list.html" target="content-frame" onclick="setMobileActive(this)">PMs</a>
+      <a href="screens/parts-list.html" target="content-frame" onclick="setMobileActive(this)">Parts</a>
+    </nav>
+  </div>
+
+  <script>
+    function setActive(el) {
+      document.querySelectorAll('.sidebar-nav a').forEach(link => link.classList.remove('active'));
+      el.classList.add('active');
+    }
+    function setMobileActive(el) {
+      document.querySelectorAll('.mobile-bottom-nav a').forEach(link => link.classList.remove('active'));
+      el.classList.add('active');
+    }
+    function showLogin() {
+        window.location.href = 'screens/login.html';
+    }
+  </script>
+</body>
+</html>

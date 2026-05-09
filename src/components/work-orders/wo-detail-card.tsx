@@ -1,6 +1,8 @@
 "use client"
 
 import { useSearchParams } from "next/navigation"
+import { useState, useEffect } from "react"
+import { createClient } from "@/lib/supabase/client"
 import { updateWorkOrderStatus } from "@/lib/actions/work-orders"
 import { StatusBadge } from "@/components/shared/status-badge"
 import { PriorityBadge } from "@/components/shared/priority-badge"
@@ -12,6 +14,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
 import { AlertCircle } from "lucide-react"
+import { PartsUsageForm } from "@/components/work-orders/parts-usage-form"
 import type { WorkOrder } from "@/lib/types"
 
 interface Props {
@@ -21,6 +24,27 @@ interface Props {
 export function WorkOrderDetailCard({ workOrder }: Props) {
   const searchParams = useSearchParams()
   const error = searchParams.get("error")
+  const [technicians, setTechnicians] = useState<Array<{ id: string; full_name: string; role: string }>>([])
+  const [partsUsed, setPartsUsed] = useState<Array<{ part_name: string; quantity_used: number; used_at: string }>>([])
+  const supabase = createClient()
+
+  useEffect(() => {
+    supabase
+      .schema("public")
+      .from("profiles")
+      .select("id, full_name, role")
+      .in("role", ["technician", "admin"])
+      .order("full_name")
+      .then(({ data }) => setTechnicians((data as any) || []))
+
+    supabase
+      .schema("ebiomed")
+      .from("parts_usage")
+      .select("quantity_used, used_at, part:part_id(name)")
+      .eq("work_order_id", workOrder.id)
+      .order("used_at", { ascending: false })
+      .then(({ data }) => setPartsUsed((data || []) as any))
+  }, [workOrder.id, supabase])
 
   const isComplete = workOrder.status === "completed" || workOrder.status === "cancelled"
 
@@ -74,6 +98,12 @@ export function WorkOrderDetailCard({ workOrder }: Props) {
             <p>{formatDateTime(workOrder.completed_at)}</p>
           </div>
         )}
+        {workOrder.downtime_minutes !== null && workOrder.downtime_minutes !== undefined && (
+          <div>
+            <p className="text-sm font-medium text-gray-500">Downtime</p>
+            <p>{workOrder.downtime_minutes} minutes</p>
+          </div>
+        )}
       </div>
 
       <div>
@@ -88,8 +118,23 @@ export function WorkOrderDetailCard({ workOrder }: Props) {
         </div>
       )}
 
+      {partsUsed.length > 0 && (
+        <div>
+          <p className="text-sm font-medium text-gray-500">Parts Used</p>
+          <div className="mt-1 space-y-1">
+            {partsUsed.map((pu, index) => (
+              <div key={index} className="flex items-center gap-2 text-sm">
+                <span className="font-medium">{(pu as any).part?.name || pu.part_name}</span>
+                <span className="text-muted-foreground">× {pu.quantity_used}</span>
+                <span className="ml-auto text-xs text-muted-foreground">{formatDateTime(pu.used_at)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {!isComplete && (
-        <form className="space-y-4 rounded-lg border bg-gray-50 p-4">
+        <form action={updateWorkOrderStatus.bind(null, workOrder.id)} className="space-y-4 rounded-lg border bg-gray-50 p-4">
           <h4 className="font-medium">Update Status</h4>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
@@ -104,15 +149,36 @@ export function WorkOrderDetailCard({ workOrder }: Props) {
                 </SelectContent>
               </Select>
             </div>
+            <div>
+              <Label htmlFor="assigned_to">Assign To</Label>
+              <Select name="assigned_to" defaultValue={workOrder.assigned_to || ""}>
+                <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Unassigned</SelectItem>
+                  {technicians.map((tech) => (
+                    <SelectItem key={tech.id} value={tech.id}>
+                      {tech.full_name} ({tech.role})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div>
             <Label htmlFor="resolution_notes">Resolution Notes</Label>
             <Textarea id="resolution_notes" name="resolution_notes" rows={3} />
           </div>
-          <Button formAction={updateWorkOrderStatus.bind(null, workOrder.id)} type="submit">
+          <Button type="submit">
             Update
           </Button>
         </form>
+      )}
+
+      {!isComplete && (
+        <div className="space-y-3 rounded-lg border bg-gray-50 p-4">
+          <h4 className="font-medium">Log Parts Used</h4>
+          <PartsUsageForm workOrderId={workOrder.id} />
+        </div>
       )}
     </div>
   )

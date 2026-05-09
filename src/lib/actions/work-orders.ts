@@ -13,6 +13,7 @@ export async function createWorkOrder(formData: FormData) {
   if (!user) return redirect("/login")
 
   const raw = Object.fromEntries(formData)
+  if (!raw.assigned_to) delete raw.assigned_to
   const parsed = workOrderSchema.safeParse(raw)
 
   if (!parsed.success) {
@@ -20,8 +21,20 @@ export async function createWorkOrder(formData: FormData) {
     return redirect(`/work-orders/new?error=${encodeURIComponent(messages)}`)
   }
 
+  // Validate equipment is not retired
+  const { data: equip } = await supabase
+    .from("equipment")
+    .select("status")
+    .eq("id", parsed.data.equipment_id)
+    .single()
+
+  if (equip?.status === "retired") {
+    return redirect(`/work-orders/new?error=${encodeURIComponent("Cannot create work order for retired equipment")}`)
+  }
+
   const { error } = await supabase.from("work_orders").insert({
     ...parsed.data,
+    assigned_to: parsed.data.assigned_to || null,
     created_by: user.id,
   })
 
@@ -61,6 +74,35 @@ export async function updateWorkOrderStatus(id: string, formData: FormData) {
   const supabase = await createClient()
   const raw = Object.fromEntries(formData)
 
+  if (!raw.assigned_to) delete raw.assigned_to
+
+  // Fetch current status to enforce lifecycle rules
+  const { data: current } = await supabase
+    .from("work_orders")
+    .select("status, started_at")
+    .eq("id", id)
+    .single()
+
+  if (!current) return redirect(`/work-orders/${id}?error=${encodeURIComponent("Work order not found")}`)
+
+  const newStatus = raw.status as string
+
+  // Completed or cancelled = immutable
+  if (current.status === "completed" || current.status === "cancelled") {
+    return redirect(`/work-orders/${id}?error=${encodeURIComponent("Cannot modify a completed or cancelled work order")}`)
+  }
+
+  // Prevent invalid transitions
+  const validTransitions: Record<string, string[]> = {
+    open: ["in_progress", "on_hold", "cancelled"],
+    in_progress: ["on_hold", "completed", "cancelled"],
+    on_hold: ["in_progress", "cancelled"],
+  }
+
+  if (newStatus && !validTransitions[current.status]?.includes(newStatus)) {
+    return redirect(`/work-orders/${id}?error=${encodeURIComponent(`Invalid status transition from ${current.status} to ${newStatus}`)}`)
+  }
+
   const parsed = workOrderUpdateSchema.safeParse(raw)
   if (!parsed.success) {
     const messages = parsed.error.errors.map((e) => e.message).join(", ")
@@ -75,6 +117,14 @@ export async function updateWorkOrderStatus(id: string, formData: FormData) {
 
   if (parsed.data.status === "completed") {
     updateData.completed_at = new Date().toISOString()
+
+    // Calculate downtime
+    if (current.started_at) {
+      const started = new Date(current.started_at).getTime()
+      const completed = new Date(updateData.completed_at as string).getTime()
+      const minutes = Math.round((completed - started) / 60000)
+      updateData.downtime_minutes = minutes
+    }
   }
 
   const { error } = await supabase

@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PM Schedule Detail - eBiomed</title>
+  <style>
+    :root { --bg: oklch(98% 0.005 250); --surface: oklch(100% 0 0); --fg: oklch(22% 0.02 240); --muted: oklch(50% 0.018 240); --border: oklch(90% 0.008 240); --accent: #2563eb; --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif; }
+    *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:var(--font); background:var(--bg); color:var(--fg); max-width:720px; }
+    .back { display:inline-flex; align-items:center; gap:0.5rem; color:var(--muted); font-size:0.875rem; text-decoration:none; margin-bottom:1rem; }
+    h2 { font-size:1.5rem; font-weight:700; margin-bottom:1.5rem; }
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.5rem; margin-bottom:1rem; }
+    .badge { display:inline-block; padding:0.2rem 0.625rem; border-radius:9999px; font-weight:500; font-size:0.6875rem; text-transform:capitalize; }
+    .badge-red { background:oklch(95% 0.03 25); color:oklch(50% 0.2 25); }
+    .info-grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+    .info-item label { display:block; font-size:0.75rem; color:var(--muted); margin-bottom:0.125rem; }
+    .info-item p { font-size:0.875rem; }
+    .checklist { list-style:none; }
+    .checklist li { display:flex; align-items:center; gap:0.75rem; padding:0.625rem 0; border-bottom:1px solid var(--border); font-size:0.875rem; }
+    .checklist li:last-child { border-bottom:none; }
+    .checkbox { width:20px; height:20px; border:2px solid var(--border); border-radius:4px; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+    .checkbox.checked { background:oklch(55% 0.16 145); border-color:oklch(55% 0.16 145); color:white; }
+    .btn { display:inline-flex; align-items:center; font-weight:500; padding:0.5rem 1.25rem; border-radius:var(--radius); border:1px solid transparent; cursor:pointer; font-size:0.875rem; background:var(--accent); color:white; margin-top:1rem; }
+    @media(max-width:500px){ .info-grid{grid-template-columns:1fr;} }
+  </style>
+</head>
+<body>
+  <a href="pm-schedules-list.html" class="back">← PM Schedules</a>
+  <h2>PM Schedule Detail</h2>
+
+  <div class="card">
+    <div class="info-grid">
+      <div class="info-item"><label>Equipment</label><p>Ventilator V500 (BM-001)</p></div>
+      <div class="info-item"><label>Frequency</label><p>Every 90 days</p></div>
+      <div class="info-item"><label>Last Completed</label><p>Jan 2, 2026</p></div>
+      <div class="info-item"><label>Next Due</label><p>Apr 2, 2026 <span class="badge badge-red">Overdue</span></p></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h4 style="margin-bottom:1rem">Checklist</h4>
+    <ul class="checklist">
+      <li><span class="checkbox" onclick="this.classList.toggle('checked');this.textContent=this.classList.contains('checked')?'✓':''"></span> Visual inspection of exterior</li>
+      <li><span class="checkbox" onclick="this.classList.toggle('checked');this.textContent=this.classList.contains('checked')?'✓':''"></span> Check power cord and connections</li>
+      <li><span class="checkbox" onclick="this.classList.toggle('checked');this.textContent=this.classList.contains('checked')?'✓':''"></span> Run self-test / calibration cycle</li>
+      <li><span class="checkbox" onclick="this.classList.toggle('checked');this.textContent=this.classList.contains('checked')?'✓':''"></span> Clean filters and vents</li>
+      <li><span class="checkbox" onclick="this.classList.toggle('checked');this.textContent=this.classList.contains('checked')?'✓':''"></span> Update maintenance log</li>
+    </ul>
+    <button class="btn" onclick="window.parent.document.querySelector('iframe[name=content-frame]').src='screens/work-orders-list.html'">Start PM</button>
+  </div>
+</body>
+</html>

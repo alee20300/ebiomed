@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Report Submitted - eBiomed</title>
+  <style>
+    :root { --bg: oklch(98% 0.005 250); --surface: oklch(100% 0 0); --fg: oklch(22% 0.02 240); --muted: oklch(50% 0.018 240); --border: oklch(90% 0.008 240); --accent: #2563eb; --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif; }
+    *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:var(--font); background:var(--bg); color:var(--fg); display:flex; align-items:center; justify-content:center; min-height:100vh; }
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:0 4px 12px rgba(0,0,0,0.08); padding:2rem; text-align:center; max-width:400px; width:100%; }
+    .icon { color:oklch(55% 0.16 145); margin-bottom:1rem; }
+    h2 { font-size:1.25rem; margin-bottom:0.5rem; }
+    p { color:var(--muted); font-size:0.875rem; margin-bottom:0.5rem; }
+    .wo-id { font-family:monospace; font-size:0.8125rem; color:var(--muted);margin-bottom:1.5rem; }
+    .btn { display:inline-flex; align-items:center; font-weight:500; padding:0.5rem 1.25rem; border-radius:var(--radius); border:1px solid var(--border); cursor:pointer; font-size:0.875rem; color:var(--fg); background:var(--surface); text-decoration:none; }
+    .btn:hover { background:var(--bg); }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <svg class="icon" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    <h2>Fault Report Submitted</h2>
+    <p>A work order has been created and the biomedical team will be notified.</p>
+    <div class="wo-id">Work Order: a1b2c3d4</div>
+    <a href="report.html" class="btn">Report Another</a>
+  </div>
+</body>
+</html>

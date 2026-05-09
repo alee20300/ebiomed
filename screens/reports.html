@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reports - eBiomed</title>
+  <style>
+    :root { --bg: oklch(98% 0.005 250); --surface: oklch(100% 0 0); --fg: oklch(22% 0.02 240); --muted: oklch(50% 0.018 240); --border: oklch(90% 0.008 240); --accent: #2563eb; --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif; }
+    *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:var(--font); background:var(--bg); color:var(--fg); }
+    h2 { font-size:1.5rem; font-weight:700; margin-bottom:1.5rem; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1.25rem; }
+    .card h3 { font-size:0.9375rem; margin-bottom:1rem; }
+    .chart { display:flex; align-items:center; justify-content:center; padding:1rem; }
+    .donut { width:120px; height:120px; border-radius:50%; background:conic-gradient(oklch(55% 0.16 145) 0deg 180deg, var(--border) 180deg 360deg); position:relative; }
+    .donut::after { content:''; position:absolute; top:20px; left:20px; right:20px; bottom:20px; background:white; border-radius:50%; }
+    .donut-label { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); font-size:0.75rem; font-weight:700; z-index:1; }
+    .bar-row { display:flex; align-items:center; gap:0.75rem; margin-bottom:0.5rem; }
+    .bar-label { font-size:0.8125rem; text-transform:capitalize; min-width:100px; }
+    .bar-bg { flex:1; height:8px; background:var(--border); border-radius:4px; overflow:hidden; }
+    .bar-fill { height:100%; border-radius:4px; background:var(--accent); }
+    .bar-val { font-size:0.8125rem; font-weight:600; min-width:24px; text-align:right; }
+    .stat-row { margin-bottom:1rem; }
+    .stat-label { font-size:0.75rem; color:var(--muted); }
+    .stat-value { font-size:1.5rem; font-weight:700; }
+    @media(max-width:600px){ .grid{grid-template-columns:1fr;} }
+  </style>
+</head>
+<body>
+  <h2>Reports</h2>
+  <div class="grid">
+    <div class="card"><h3>PM Compliance</h3><div class="chart"><div class="donut"><span class="donut-label">50%</span></div></div></div>
+    <div class="card"><h3>Equipment by Status</h3>
+      <div class="bar-row"><span class="bar-label">active</span><div class="bar-bg"><div class="bar-fill" style="width:80%"></div></div><span class="bar-val">8</span></div>
+      <div class="bar-row"><span class="bar-label">under repair</span><div class="bar-bg"><div class="bar-fill" style="width:10%"></div></div><span class="bar-val">1</span></div>
+      <div class="bar-row"><span class="bar-label">retired</span><div class="bar-bg"><div class="bar-fill" style="width:10%"></div></div><span class="bar-val">1</span></div>
+    </div>
+    <div class="card"><h3>Work Orders This Month</h3>
+      <div class="bar-row"><span class="bar-label">open</span><div class="bar-bg"><div class="bar-fill" style="width:40%"></div></div><span class="bar-val">2</span></div>
+      <div class="bar-row"><span class="bar-label">in progress</span><div class="bar-bg"><div class="bar-fill" style="width:20%"></div></div><span class="bar-val">1</span></div>
+      <div class="bar-row"><span class="bar-label">completed</span><div class="bar-bg"><div class="bar-fill" style="width:60%"></div></div><span class="bar-val">3</span></div>
+    </div>
+    <div class="card"><h3>Summary</h3>
+      <div class="stat-row"><div class="stat-label">Total Equipment</div><div class="stat-value">10</div></div>
+      <div class="stat-row"><div class="stat-label">Active PM Schedules</div><div class="stat-value">9</div></div>
+      <div class="stat-row"><div class="stat-label">PM Compliance Rate</div><div class="stat-value">67%</div></div>
+    </div>
+  </div>
+</body>
+</html>

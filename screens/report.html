@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Report Fault - eBiomed</title>
+  <style>
+    :root { --bg: oklch(98% 0.005 250); --surface: oklch(100% 0 0); --fg: oklch(22% 0.02 240); --muted: oklch(50% 0.018 240); --border: oklch(90% 0.008 240); --accent: #2563eb; --danger: oklch(65% 0.22 25); --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif; }
+    *,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:var(--font); background:var(--bg); color:var(--fg); display:flex; align-items:center; justify-content:center; min-height:100vh; }
+    .container { width:100%; max-width:480px; padding:2rem 1.5rem; }
+    .logo { text-align:center; margin-bottom:0.25rem; }
+    .logo a { font-size:1.75rem; font-weight:700; color:var(--accent); text-decoration:none; }
+    .tagline { text-align:center; color:var(--muted); font-size:0.875rem; margin-bottom:2rem; }
+    .btn { display:inline-flex; align-items:center; justify-content:center; gap:0.5rem; font-weight:500; padding:0.625rem 1.25rem; border-radius:var(--radius); border:1px solid transparent; cursor:pointer; font-size:0.9375rem; width:100%; transition:all 150ms; }
+    .btn-large { flex-direction:column; padding:2rem; gap:0.75rem; font-size:1rem; }
+    .btn-primary { background:var(--accent); color:white; }
+    .btn-outline { background:var(--surface); color:var(--fg); border-color:var(--border); }
+    .btn-primary:hover { filter:brightness(1.1); }
+    .btn-outline:hover { background:var(--bg); }
+    .split { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+    .icon { width:32px; height:32px; }
+    .manual-form { display:none; }
+    .manual-form.show { display:block; }
+    .scanner-view { display:none; }
+    .scanner-view.show { display:block; }
+    .scanner-placeholder { background:var(--surface); border:2px dashed var(--border); border-radius:var(--radius); padding:3rem; text-align:center; color:var(--muted); font-size:0.875rem; margin-bottom:1rem; }
+    .flex-row { display:flex; gap:0.5rem; }
+    .form-input { display:block; width:100%; padding:0.625rem 0.75rem; border:1px solid var(--border); border-radius:var(--radius); font-size:1rem; font-family:var(--font); background:var(--surface); }
+    .form-input:focus { outline:2px solid var(--accent); outline-offset:-1px; }
+    .back-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; }
+    .back-btn { background:none; border:none; color:var(--muted); cursor:pointer; font-size:0.875rem; display:flex; align-items:center; gap:0.25rem; }
+    .error-banner { background:oklch(95% 0.03 25); border:1px solid oklch(85% 0.08 25); border-radius:var(--radius); padding:0.75rem; font-size:0.875rem; color:oklch(50% 0.18 25); margin-bottom:1rem; display:none; }
+    .error-banner.show { display:block; }
+    .equipment-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:1rem; margin-bottom:1.5rem; display:flex; align-items:center; gap:1rem; }
+    .equipment-card .eq-name { font-weight:600; font-size:0.9375rem; }
+    .equipment-card .eq-meta { font-size:0.8125rem; color:var(--muted); }
+    .badge { display:inline-block; padding:0.2rem 0.625rem; border-radius:9999px; font-weight:500; font-size:0.6875rem; text-transform:capitalize; }
+    .badge-green { background:oklch(95% 0.05 145); color:oklch(40% 0.15 145); }
+    .badge-purple { background:oklch(95% 0.05 250); color:oklch(45% 0.15 250); }
+    .photo-upload { display:flex; align-items:center; justify-content:center; flex-direction:column; border:2px dashed var(--border); border-radius:var(--radius); padding:2rem; cursor:pointer; margin-bottom:1rem; }
+    .photo-upload:hover { border-color:var(--accent); }
+    .photo-upload .photo-icon { width:32px; height:32px; color:var(--muted); margin-bottom:0.5rem; }
+    .photo-preview { position:relative; margin-bottom:1rem; }
+    .photo-preview img { max-height:240px; border-radius:var(--radius); width:100%; object-fit:cover; }
+    .photo-preview .remove-btn { position:absolute; top:0.5rem; right:0.5rem; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:0.25rem 0.5rem; font-size:0.75rem; cursor:pointer; }
+    .form-group { margin-bottom:1rem; }
+    .form-label { display:block; font-size:0.8125rem; font-weight:500; margin-bottom:0.375rem; }
+    .form-label .req { color:oklch(55% 0.22 25); }
+    .form-textarea { display:block; width:100%; padding:0.5rem 0.75rem; border:1px solid var(--border); border-radius:var(--radius); font-size:0.875rem; font-family:var(--font); background:var(--surface); resize:vertical; min-height:100px; }
+    .form-textarea:focus { outline:2px solid var(--accent); outline-offset:-1px; }
+    .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+    .fault-form { display:none; }
+    .fault-form.show { display:block; }
+    @media(max-width:500px){ .split{grid-template-columns:1fr;} .grid-2{grid-template-columns:1fr;} }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo"><a href="report.html">eBiomed</a></div>
+    <div class="tagline">Report Faulty Equipment</div>
+
+    <!-- Idle: Scanner + Manual buttons -->
+    <div id="idleView">
+      <div class="split">
+        <button class="btn btn-primary btn-large" onclick="showScanner()">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Scan Barcode
+        </button>
+        <button class="btn btn-outline btn-large" onclick="showManual()">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M6 16h.01M10 16h.01M14 16h.01M18 16h.01"/></svg>
+          Enter Tag Manually
+        </button>
+      </div>
+    </div>
+
+    <!-- Scanner View -->
+    <div id="scannerView" class="scanner-view">
+      <div class="back-row"><button class="back-btn" onclick="showIdle()">← Back</button><span style="font-size:0.875rem;color:var(--muted)">Point camera at barcode</span></div>
+      <div class="scanner-placeholder">Camera viewport placeholder<br><span style="font-size:0.75rem">(Camera access required in real app)</span></div>
+      <button class="btn btn-primary" onclick="simulateScan()">Simulate Scan (BM-001)</button>
+    </div>
+
+    <!-- Manual Entry -->
+    <div id="manualView" class="manual-form">
+      <div class="back-row"><button class="back-btn" onclick="showIdle()">← Back</button></div>
+      <div class="flex-row">
+        <input class="form-input" id="tagInput" placeholder="e.g. BM-001" style="font-family:monospace;font-size:1.125rem" autofocus>
+        <button class="btn btn-primary" style="width:auto;min-width:60px" onclick="lookupTag()">Go</button>
+      </div>
+      <div id="tagError" class="error-banner"></div>
+    </div>
+
+    <!-- Fault Form (shown after tag lookup) -->
+    <div id="faultForm" class="fault-form">
+      <div class="back-row"><button class="back-btn" onclick="showIdle()">← Scan Another</button></div>
+      <div id="equipmentCard" class="equipment-card"></div>
+      <div id="formError" class="error-banner"></div>
+      <form onsubmit="submitReport(event)">
+        <div class="photo-upload" onclick="document.getElementById('photoInput').click()" id="photoDrop">
+          <svg class="photo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <span style="font-size:0.875rem;color:var(--muted)">Tap to take photo</span>
+        </div>
+        <div id="photoPreview" class="photo-preview" style="display:none"></div>
+        <input type="file" id="photoInput" accept="image/*" capture="environment" style="display:none" onchange="previewPhoto(event)">
+        <div class="form-group"><label class="form-label"><span class="req">*</span> Describe the Issue</label><textarea class="form-textarea" placeholder="Describe what's wrong with the equipment..." required minlength="10"></textarea></div>
+        <div class="grid-2">
+          <div class="form-group"><label class="form-label">Your Name</label><input class="form-input" placeholder="Optional"></div>
+          <div class="form-group"><label class="form-label">Department</label><input class="form-input" placeholder="Optional"></div>
+        </div>
+        <button type="submit" class="btn btn-primary">Submit Fault Report</button>
+      </form>
+    </div>
+
+    <!-- Success -->
+    <div id="successView" style="display:none;text-align:center">
+      <svg style="width:64px;height:64px;color:oklch(55% 0.16 145);margin-bottom:1rem" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      <h2 style="margin-bottom:0.5rem">Fault Report Submitted</h2>
+      <p style="color:var(--muted);font-size:0.875rem;margin-bottom:1.5rem">A work order has been created and the biomedical team will be notified.</p>
+      <button class="btn btn-outline" onclick="showIdle()">Report Another</button>
+    </div>
+  </div>
+
+  <script>
+    function showScanner() { document.getElementById('idleView').style.display='none'; document.getElementById('scannerView').classList.add('show'); }
+    function showManual() { document.getElementById('idleView').style.display='none'; document.getElementById('manualView').classList.add('show'); document.getElementById('tagInput').focus(); }
+    function showIdle() {
+      document.getElementById('idleView').style.display='block';
+      document.getElementById('scannerView').classList.remove('show');
+      document.getElementById('manualView').classList.remove('show');
+      document.getElementById('faultForm').classList.remove('show');
+      document.getElementById('successView').style.display='none';
+    }
+    function simulateScan() { showFaultForm('BM-001'); }
+    function lookupTag() {
+      var tag = document.getElementById('tagInput').value.trim();
+      if (!tag) return;
+      showFaultForm(tag);
+    }
+    function showFaultForm(tag) {
+      document.getElementById('scannerView').classList.remove('show');
+      document.getElementById('manualView').classList.remove('show');
+      // Simulate: assume tag is valid
+      document.getElementById('equipmentCard').innerHTML = '<div><div class="eq-name">Ventilator V500</div><div class="eq-meta">Tag: '+tag+' &middot; ICU &middot; ICU Room 3</div></div><span class="badge badge-green" style="margin-left:auto">active</span>';
+      document.getElementById('faultForm').classList.add('show');
+    }
+    function previewPhoto(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      document.getElementById('photoDrop').style.display='none';
+      var preview = document.getElementById('photoPreview');
+      preview.style.display='block';
+      preview.innerHTML = '<img src="'+URL.createObjectURL(file)+'" alt="Preview"><button class="remove-btn" onclick="removePhoto()">Remove</button>';
+    }
+    function removePhoto() {
+      document.getElementById('photoInput').value = '';
+      document.getElementById('photoPreview').style.display='none';
+      document.getElementById('photoDrop').style.display='flex';
+    }
+    function submitReport(e) {
+      e.preventDefault();
+      document.getElementById('faultForm').classList.remove('show');
+      document.getElementById('successView').style.display='block';
+    }
+  </script>
+</body>
+</html>

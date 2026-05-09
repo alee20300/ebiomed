@@ -1,11 +1,15 @@
 import { Suspense } from "react"
 import { createClient } from "@/lib/supabase/server"
 import { ComplianceChart } from "@/components/reports/compliance-chart"
+import { ReportsDateFilter } from "@/components/reports/reports-date-filter"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
-async function ReportsContent() {
+async function ReportsContent({ from, to }: { from?: string; to?: string }) {
   const supabase = await createClient()
+
+  const fromDate = from ? new Date(from).toISOString() : new Date(new Date().setDate(1)).toISOString()
+  const toDate = to ? new Date(new Date(to).setHours(23, 59, 59, 999)).toISOString() : new Date().toISOString()
 
   const { count: totalPMs } = await supabase
     .from("pm_schedules")
@@ -22,7 +26,8 @@ async function ReportsContent() {
   const { data: recentWOs } = await supabase
     .from("work_orders")
     .select("status, created_at, priority")
-    .gte("created_at", new Date(new Date().setDate(1)).toISOString())
+    .gte("created_at", fromDate)
+    .lte("created_at", toDate)
 
   const statusCounts: Record<string, number> = {}
   equipmentByStatus?.forEach((eq: { status: string }) => {
@@ -67,7 +72,7 @@ async function ReportsContent() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Work Orders This Month</CardTitle>
+            <CardTitle>Work Orders</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
@@ -82,7 +87,7 @@ async function ReportsContent() {
               ))}
             </div>
             {(!recentWOs || recentWOs.length === 0) && (
-              <p className="py-8 text-center text-sm text-gray-500">No work orders this month.</p>
+              <p className="py-8 text-center text-sm text-gray-500">No work orders in selected date range.</p>
             )}
           </CardContent>
         </Card>
@@ -113,12 +118,21 @@ async function ReportsContent() {
   )
 }
 
-export default function ReportsPage() {
+export default async function ReportsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ from?: string; to?: string }>
+}) {
+  const { from, to } = await searchParams
+
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold tracking-tight">Reports</h2>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-2xl font-bold tracking-tight">Reports</h2>
+        <ReportsDateFilter />
+      </div>
       <Suspense fallback={<Skeleton className="h-96 w-full" />}>
-        <ReportsContent />
+        <ReportsContent from={from} to={to} />
       </Suspense>
     </div>
   )

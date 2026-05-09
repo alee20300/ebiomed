@@ -3,6 +3,8 @@
 import { restockPart } from "@/lib/actions/parts"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { Label } from "@/components/ui/label"
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -65,9 +67,7 @@ export function PartsTable({ data }: Props) {
                 <TableCell>{part.location || "—"}</TableCell>
                 <TableCell>
                   <Dialog>
-                    <DialogTrigger asChild>
-                      <Button size="sm" variant="outline">Restock</Button>
-                    </DialogTrigger>
+                    <DialogTrigger className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>Restock</DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
                         <DialogTitle>Restock: {part.name}</DialogTitle>
@@ -75,7 +75,7 @@ export function PartsTable({ data }: Props) {
                           Current quantity: {part.quantity_on_hand}
                         </DialogDescription>
                       </DialogHeader>
-                      <form className="space-y-4">
+                      <form action={restockPart} className="space-y-4">
                         <input type="hidden" name="id" value={part.id} />
                         <div>
                           <Label htmlFor="quantity">Quantity to Add</Label>
@@ -87,7 +87,7 @@ export function PartsTable({ data }: Props) {
                             required
                           />
                         </div>
-                        <Button formAction={restockPart} type="submit" className="w-full">
+                        <Button type="submit" className="w-full">
                           Confirm Restock
                         </Button>
                       </form>

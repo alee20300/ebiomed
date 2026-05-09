@@ -22,7 +22,7 @@ export function FaultForm({ equipment }: Props) {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
 
   return (
-    <form className="space-y-6">
+    <form action={submitFaultReport} className="space-y-6">
       {error && (
         <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
           <AlertCircle className="h-4 w-4" />
@@ -104,7 +104,7 @@ export function FaultForm({ equipment }: Props) {
         </div>
       </div>
 
-      <Button formAction={submitFaultReport} type="submit" className="w-full" size="lg">
+      <Button type="submit" className="w-full" size="lg">
         Submit Fault Report
       </Button>
     </form>

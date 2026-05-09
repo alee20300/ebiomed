@@ -1,6 +1,8 @@
 import { Suspense } from "react"
 import { createClient } from "@/lib/supabase/server"
 import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -66,17 +68,15 @@ export default function SettingsPage() {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
         <Dialog>
-          <DialogTrigger asChild>
-            <Button>
-              <UserPlus className="mr-2 h-4 w-4" />
-              Add User
-            </Button>
+          <DialogTrigger className={cn(buttonVariants({}))}>
+            <UserPlus className="mr-2 h-4 w-4" />
+            Add User
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Create New User</DialogTitle>
             </DialogHeader>
-            <form className="space-y-4">
+            <form action={signup} className="space-y-4">
               <div>
                 <Label htmlFor="fullName">Full Name *</Label>
                 <Input id="fullName" name="fullName" required />
@@ -104,7 +104,7 @@ export default function SettingsPage() {
                 <Label htmlFor="department">Department</Label>
                 <Input id="department" name="department" />
               </div>
-              <Button formAction={signup} type="submit" className="w-full">
+              <Button type="submit" className="w-full">
                 Create User
               </Button>
             </form>

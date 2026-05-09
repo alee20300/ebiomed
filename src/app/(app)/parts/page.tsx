@@ -3,6 +3,8 @@ import { getParts } from "@/lib/actions/parts"
 import { PartsTable } from "@/components/parts/parts-table"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
@@ -28,17 +30,15 @@ export default function PartsPage() {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold tracking-tight">Parts Inventory</h2>
         <Dialog>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Part
-            </Button>
+          <DialogTrigger className={cn(buttonVariants({}))}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Part
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Add New Part</DialogTitle>
             </DialogHeader>
-            <form className="space-y-4">
+            <form action={createPart} className="space-y-4">
               <div>
                 <Label htmlFor="name">Part Name *</Label>
                 <Input id="name" name="name" required />
@@ -69,7 +69,7 @@ export default function PartsPage() {
                 <Label htmlFor="location">Storage Location</Label>
                 <Input id="location" name="location" />
               </div>
-              <Button formAction={createPart} type="submit" className="w-full">
+              <Button type="submit" className="w-full">
                 Create Part
               </Button>
             </form>

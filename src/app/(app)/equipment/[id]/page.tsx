@@ -5,67 +5,87 @@ import { getEquipmentById } from "@/lib/actions/equipment"
 import { EquipmentInfoTab } from "@/components/equipment/equipment-info-tab"
 import { EquipmentHistoryTab } from "@/components/equipment/equipment-history-tab"
 import { EquipmentPMTab } from "@/components/equipment/equipment-pm-tab"
+import { EquipmentForm } from "@/components/equipment/equipment-form"
 import { BarcodeDisplay } from "@/components/report/barcode-display"
 import { QRCodeDisplay } from "@/components/report/qrcode-display"
-import { Button } from "@/components/ui/button"
+import { PrintLabelButton } from "@/components/report/print-label-button"
+import { buttonVariants } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { StatusBadge } from "@/components/shared/status-badge"
-import { ChevronLeft, Printer } from "lucide-react"
+import { ChevronLeft } from "lucide-react"
 
 export default async function EquipmentDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ edit?: string }>
 }) {
   const { id } = await params
+  const { edit } = await searchParams
   const equipment = await getEquipmentById(id)
 
   if (!equipment) notFound()
 
+  const isEditing = edit === "1"
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/equipment">
-            <ChevronLeft className="h-5 w-5" />
-          </Link>
-        </Button>
+        <Link href="/equipment" className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}>
+          <ChevronLeft className="h-5 w-5" />
+        </Link>
         <div>
           <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-bold tracking-tight">{equipment.name}</h2>
-            <StatusBadge status={equipment.status} />
+            <h2 className="text-2xl font-bold tracking-tight">
+              {isEditing ? "Edit Equipment" : equipment.name}
+            </h2>
+            {!isEditing && <StatusBadge status={equipment.status} />}
           </div>
           <p className="text-sm text-gray-500">Tag: {equipment.tag_number}</p>
         </div>
         <div className="ml-auto">
-          <Button asChild variant="outline">
-            <Link href={`/equipment/${id}?edit=1`}>Edit</Link>
-          </Button>
+          {isEditing ? (
+            <Link href={`/equipment/${id}`} className={cn(buttonVariants({ variant: "outline" }))}>
+              Cancel
+            </Link>
+          ) : (
+            <Link href={`/equipment/${id}?edit=1`} className={cn(buttonVariants({ variant: "outline" }))}>
+              Edit
+            </Link>
+          )}
         </div>
       </div>
 
-      <Tabs defaultValue="info" className="w-full">
-        <TabsList>
-          <TabsTrigger value="info">Information</TabsTrigger>
-          <TabsTrigger value="history">Work History</TabsTrigger>
-          <TabsTrigger value="pm">PM Schedules</TabsTrigger>
-        </TabsList>
-        <TabsContent value="info" className="rounded-lg border bg-white p-6">
-          <EquipmentInfoTab equipment={equipment} />
-        </TabsContent>
-        <TabsContent value="history" className="rounded-lg border bg-white p-6">
-          <Suspense fallback={<Skeleton className="h-32 w-full" />}>
-            <EquipmentHistoryTab equipmentId={id} />
-          </Suspense>
-        </TabsContent>
-        <TabsContent value="pm" className="rounded-lg border bg-white p-6">
-          <Suspense fallback={<Skeleton className="h-32 w-full" />}>
-            <EquipmentPMTab equipmentId={id} />
-          </Suspense>
-        </TabsContent>
-      </Tabs>
+      {isEditing ? (
+        <div className="rounded-lg border bg-white p-6">
+          <EquipmentForm equipment={equipment} />
+        </div>
+      ) : (
+        <Tabs defaultValue="info" className="w-full">
+          <TabsList>
+            <TabsTrigger value="info">Information</TabsTrigger>
+            <TabsTrigger value="history">Work History</TabsTrigger>
+            <TabsTrigger value="pm">PM Schedules</TabsTrigger>
+          </TabsList>
+          <TabsContent value="info" className="rounded-lg border bg-white p-6">
+            <EquipmentInfoTab equipment={equipment} />
+          </TabsContent>
+          <TabsContent value="history" className="rounded-lg border bg-white p-6">
+            <Suspense fallback={<Skeleton className="h-32 w-full" />}>
+              <EquipmentHistoryTab equipmentId={id} />
+            </Suspense>
+          </TabsContent>
+          <TabsContent value="pm" className="rounded-lg border bg-white p-6">
+            <Suspense fallback={<Skeleton className="h-32 w-full" />}>
+              <EquipmentPMTab equipmentId={id} />
+            </Suspense>
+          </TabsContent>
+        </Tabs>
+      )}
 
       <Card>
         <CardHeader>
@@ -92,14 +112,7 @@ export default async function EquipmentDetailPage({
               <p className="text-muted-foreground">{equipment.department} — {equipment.location}</p>
             </div>
           </div>
-          <Button
-            onClick={() => window.print()}
-            className="mt-4 w-full"
-            variant="outline"
-          >
-            <Printer className="mr-2 h-4 w-4" />
-            Print Label
-          </Button>
+          <PrintLabelButton />
           <p className="mt-2 text-xs text-muted-foreground text-center">
             Scan QR code with phone camera to report a fault
           </p>

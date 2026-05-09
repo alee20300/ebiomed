@@ -1,0 +1,21 @@
+import Link from "next/link"
+import { ChevronLeft } from "lucide-react"
+import { buttonVariants } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import { PMScheduleForm } from "@/components/pm-schedules/pm-form"
+
+export default function NewPMSchedulePage() {
+  return (
+    <div className="mx-auto max-w-2xl space-y-6">
+      <div className="flex items-center gap-2">
+        <Link href="/pm-schedules" className={cn(buttonVariants({ variant: "ghost", size: "icon" }))}>
+          <ChevronLeft className="h-5 w-5" />
+        </Link>
+        <h2 className="text-2xl font-bold tracking-tight">New PM Schedule</h2>
+      </div>
+      <div className="rounded-lg border bg-white p-6">
+        <PMScheduleForm />
+      </div>
+    </div>
+  )
+}

@@ -132,25 +132,20 @@
 }
 
 @media print {
-  body * {
-    visibility: hidden;
-  }
-
-  .print-only,
-  .print-only * {
-    visibility: visible;
+  @page {
+    margin: 0;
+    size: auto;
   }
 
   .print-only {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    padding: 20px;
-  }
-
-  @page {
-    margin: 10mm;
-    size: auto;
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 999999 !important;
+    background: white !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 24px !important;
+    padding: 10mm !important;
   }
 }
