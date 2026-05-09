@@ -34,3 +34,34 @@ select
   (now() + (random() * interval '60 days'))::timestamptz
 from equipment
 where status = 'active';
+
+-- Seed departments from equipment data
+INSERT INTO ebiomed.departments (name)
+SELECT DISTINCT department FROM ebiomed.equipment WHERE department IS NOT NULL
+UNION
+SELECT DISTINCT department FROM ebiomed.profiles WHERE department IS NOT NULL
+ON CONFLICT (name) DO NOTHING;
+
+-- Add viewer with departments for demo purposes
+DO $$
+DECLARE
+  v_viewer_id uuid;
+  v_icu_id uuid;
+  v_radiology_id uuid;
+BEGIN
+  SELECT id INTO v_viewer_id FROM auth.users WHERE email = 'viewer@ebiomed.local';
+  SELECT id INTO v_icu_id FROM ebiomed.departments WHERE name = 'ICU' LIMIT 1;
+  SELECT id INTO v_radiology_id FROM ebiomed.departments WHERE name = 'Radiology' LIMIT 1;
+
+  IF v_viewer_id IS NOT NULL AND v_icu_id IS NOT NULL THEN
+    INSERT INTO ebiomed.viewer_departments (viewer_id, department_id)
+    VALUES (v_viewer_id, v_icu_id)
+    ON CONFLICT DO NOTHING;
+  END IF;
+
+  IF v_viewer_id IS NOT NULL AND v_radiology_id IS NOT NULL THEN
+    INSERT INTO ebiomed.viewer_departments (viewer_id, department_id)
+    VALUES (v_viewer_id, v_radiology_id)
+    ON CONFLICT DO NOTHING;
+  END IF;
+END $$;
