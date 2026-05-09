@@ -35,7 +35,7 @@ export async function signup(formData: FormData) {
   }
 
   if (data.user) {
-    await supabase.schema("public").from("profiles").insert({
+    await supabase.schema("ebiomed").from("profiles").insert({
       id: data.user.id,
       full_name: fullName,
       role,
@@ -58,7 +58,7 @@ export async function getCurrentUser() {
   if (!user) return null
 
   const { data: profile } = await supabase
-    .schema("public")
+    .schema("ebiomed")
     .from("profiles")
     .select("*")
     .eq("id", user.id)
@@ -70,7 +70,7 @@ export async function getCurrentUser() {
 export async function getProfiles() {
   const supabase = await createClient()
   const { data } = await supabase
-    .schema("public")
+    .schema("ebiomed")
     .from("profiles")
     .select("*")
     .order("full_name")

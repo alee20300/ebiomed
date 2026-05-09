@@ -1,5 +1,7 @@
+import { redirect } from "next/navigation"
 import { Suspense } from "react"
 import { createClient } from "@/lib/supabase/server"
+import { getCurrentUser } from "@/lib/actions/profiles"
 import { ComplianceChart } from "@/components/reports/compliance-chart"
 import { ReportsDateFilter } from "@/components/reports/reports-date-filter"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -123,6 +125,9 @@ export default async function ReportsPage({
 }: {
   searchParams: Promise<{ from?: string; to?: string }>
 }) {
+  const user = await getCurrentUser()
+  if (user?.role === "viewer") redirect("/dashboard")
+
   const { from, to } = await searchParams
 
   return (

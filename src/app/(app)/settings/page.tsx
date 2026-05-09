@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation"
 import { Suspense } from "react"
 import { createClient } from "@/lib/supabase/server"
 import { getCurrentUser } from "@/lib/actions/profiles"
@@ -25,7 +26,7 @@ import type { Profile } from "@/lib/types"
 async function UsersList() {
   const supabase = await createClient()
   const { data } = await supabase
-    .schema("public")
+    .schema("ebiomed")
     .from("profiles")
     .select("*")
     .order("full_name")
@@ -126,7 +127,10 @@ async function DepartmentsList() {
   )
 }
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const user = await getCurrentUser()
+  if (user?.role === "viewer") redirect("/dashboard")
+
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <div className="flex items-center justify-between">

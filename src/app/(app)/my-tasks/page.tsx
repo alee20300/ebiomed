@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation"
 import { Suspense } from "react"
 import Link from "next/link"
 import { getCurrentUser } from "@/lib/actions/profiles"
@@ -69,7 +70,10 @@ async function MyTasksList() {
   )
 }
 
-export default function MyTasksPage() {
+export default async function MyTasksPage() {
+  const user = await getCurrentUser()
+  if (user?.role === "viewer") redirect("/dashboard")
+
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold tracking-tight">My Tasks</h2>

@@ -21,7 +21,10 @@ export function Sidebar({ role = "viewer" }: SidebarProps) {
   const pathname = usePathname()
 
   const visibleItems = NAV_ITEMS.filter((item) => {
-    if (role === "viewer" && item.href === "/settings") return false
+    // Viewer: dashboard and work-orders only
+    if (role === "viewer") {
+      return item.href === "/dashboard" || item.href === "/work-orders"
+    }
     return true
   })
 

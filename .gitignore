@@ -39,3 +39,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local dev scripts (may contain secrets)
+/scripts/
+
+# opencode agent artifacts
+.opencode/
+
+# supabase local dev volume
+supabase/.temp/
+
+# local docker volumes
+volumes/

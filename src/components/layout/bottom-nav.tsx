@@ -22,7 +22,10 @@ export function BottomNav({ role = "viewer" }: BottomNavProps) {
   const pathname = usePathname()
 
   const visibleItems = BOTTOM_ITEMS.filter((item) => {
-    if (role === "viewer" && item.href === "/settings") return false
+    // Viewer: dashboard and work-orders only
+    if (role === "viewer") {
+      return item.href === "/dashboard" || item.href === "/work-orders"
+    }
     return true
   })
 

@@ -31,7 +31,7 @@ export function WorkOrderForm({ preselectedEquipmentId }: { preselectedEquipment
       .then(({ data }) => setEquipment((data || []) as Equipment[]))
 
     supabase
-      .schema("public")
+      .schema("ebiomed")
       .from("profiles")
       .select("id, full_name, role")
       .in("role", ["technician", "admin"])

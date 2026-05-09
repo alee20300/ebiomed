@@ -30,7 +30,7 @@ export function WorkOrderDetailCard({ workOrder }: Props) {
 
   useEffect(() => {
     supabase
-      .schema("public")
+      .schema("ebiomed")
       .from("profiles")
       .select("id, full_name, role")
       .in("role", ["technician", "admin"])
