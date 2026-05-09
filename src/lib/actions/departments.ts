@@ -44,9 +44,9 @@ export async function addDepartment(formData: FormData) {
 
   if (error) {
     if (error.code === "23505") {
-      return redirect("/settings?error=" + encodeURIComponent("Department already exists"))
+      return redirect(`/settings?error=${encodeURIComponent("Department already exists")}`)
     }
-    return redirect("/settings?error=" + encodeURIComponent(error.message))
+    return redirect(`/settings?error=${encodeURIComponent(error.message)}`)
   }
 
   revalidatePath("/settings")
