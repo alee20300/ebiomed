@@ -1,7 +1,9 @@
 import { Suspense } from "react"
 import { createClient } from "@/lib/supabase/server"
-import { Button } from "@/components/ui/button"
-import { buttonVariants } from "@/components/ui/button"
+import { getCurrentUser } from "@/lib/actions/profiles"
+import { getAllDepartments } from "@/lib/actions/departments"
+import { addDepartment, deleteDepartment } from "@/lib/actions/departments"
+import { Button, buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -15,8 +17,9 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
-import { UserPlus } from "lucide-react"
+import { UserPlus, Trash2, Settings2 } from "lucide-react"
 import { signup } from "@/lib/actions/profiles"
+import { ViewerDepartmentsDialog } from "@/components/settings/viewer-departments-dialog"
 import type { Profile } from "@/lib/types"
 
 async function UsersList() {
@@ -28,6 +31,7 @@ async function UsersList() {
     .order("full_name")
 
   const profiles = (data || []) as Profile[]
+  const departments = await getAllDepartments()
 
   return (
     <div className="rounded-lg border bg-white">
@@ -38,6 +42,7 @@ async function UsersList() {
             <TableHead>Role</TableHead>
             <TableHead>Department</TableHead>
             <TableHead>Phone</TableHead>
+            <TableHead className="w-[100px]">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -47,17 +52,76 @@ async function UsersList() {
               <TableCell className="capitalize">{profile.role}</TableCell>
               <TableCell>{profile.department || "—"}</TableCell>
               <TableCell>{profile.phone || "—"}</TableCell>
+              <TableCell>
+                {profile.role === "viewer" && (
+                  <ViewerDepartmentsDialog
+                    viewerId={profile.id}
+                    viewerName={profile.full_name}
+                    departments={departments}
+                  />
+                )}
+              </TableCell>
             </TableRow>
           ))}
           {profiles.length === 0 && (
             <TableRow>
-              <TableCell colSpan={4} className="text-center text-gray-500 py-8">
+              <TableCell colSpan={5} className="text-center text-gray-500 py-8">
                 No users found.
               </TableCell>
             </TableRow>
           )}
         </TableBody>
       </Table>
+    </div>
+  )
+}
+
+async function DepartmentsList() {
+  const departments = await getAllDepartments()
+  const user = await getCurrentUser()
+  const isAdmin = user?.role === "admin"
+
+  return (
+    <div className="space-y-4">
+      {isAdmin && (
+        <form action={addDepartment} className="flex gap-2">
+          <Input name="name" placeholder="New department name..." required maxLength={100} />
+          <Button type="submit" variant="secondary">Add</Button>
+        </form>
+      )}
+      <div className="rounded-lg border bg-white">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Department Name</TableHead>
+              {isAdmin && <TableHead className="w-[60px]">Delete</TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {departments.map((dept) => (
+              <TableRow key={dept.id}>
+                <TableCell className="font-medium">{dept.name}</TableCell>
+                {isAdmin && (
+                  <TableCell>
+                    <form action={deleteDepartment.bind(null, dept.id)}>
+                      <button type="submit" className="text-red-500 hover:text-red-700">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </form>
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+            {departments.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={isAdmin ? 2 : 1} className="text-center text-gray-500 py-8">
+                  No departments configured.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   )
 }
@@ -112,9 +176,22 @@ export default function SettingsPage() {
         </Dialog>
       </div>
 
-      <Suspense fallback={<Skeleton className="h-64 w-full" />}>
-        <UsersList />
-      </Suspense>
+      <div>
+        <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
+          <Settings2 className="h-5 w-5" />
+          Departments
+        </h3>
+        <Suspense fallback={<Skeleton className="h-32 w-full" />}>
+          <DepartmentsList />
+        </Suspense>
+      </div>
+
+      <div>
+        <h3 className="mb-4 text-lg font-semibold">Users</h3>
+        <Suspense fallback={<Skeleton className="h-64 w-full" />}>
+          <UsersList />
+        </Suspense>
+      </div>
     </div>
   )
 }
