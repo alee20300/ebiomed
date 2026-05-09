@@ -56,34 +56,35 @@ export async function getWorkOrders(): Promise<WorkOrder[]> {
     const deptIds = await getViewerDepartmentIds(user.id)
     if (deptIds.length === 0) return []
 
-    const { data: departments } = await supabase
+    const { data: departments, error: deptError } = await supabase
       .from("departments")
       .select("name")
       .in("id", deptIds)
 
+    if (deptError) return []
     const deptNames = (departments || []).map((d: { name: string }) => d.name)
 
     if (deptNames.length === 0) return []
 
-    const { data: equipIds } = await supabase
+    const { data: equipIds, error: equipError } = await supabase
       .from("equipment")
       .select("id")
       .in("department", deptNames)
 
-    if (!equipIds) return []
+    if (equipError || !equipIds) return []
 
     const equipmentIdList = equipIds.map((e: { id: string }) => e.id)
 
     if (equipmentIdList.length === 0) return []
 
-    const { data } = await supabase
+    const { data, error: woError } = await supabase
       .from("work_orders")
       .select("*, equipment(*)")
       .in("equipment_id", equipmentIdList)
       .in("status", ["open", "in_progress", "on_hold"])
       .order("created_at", { ascending: false })
 
-    if (!data) return []
+    if (woError || !data) return []
     return data as unknown as WorkOrder[]
   }
 
