@@ -26,6 +26,7 @@ export async function signup(formData: FormData) {
   const email = formData.get("email") as string
   const password = formData.get("password") as string
   const fullName = formData.get("fullName") as string
+  const role = (formData.get("role") as string) || "technician"
 
   const { data, error } = await supabase.auth.signUp({ email, password })
 
@@ -37,7 +38,7 @@ export async function signup(formData: FormData) {
     await supabase.schema("public").from("profiles").insert({
       id: data.user.id,
       full_name: fullName,
-      role: "technician",
+      role,
     })
   }
 
@@ -64,4 +65,21 @@ export async function getCurrentUser() {
     .single()
 
   return { ...user, ...profile }
+}
+
+export async function getProfiles() {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .schema("public")
+    .from("profiles")
+    .select("*")
+    .order("full_name")
+
+  return (data || []) as Array<{
+    id: string
+    full_name: string | null
+    role: string
+    department: string | null
+    phone: string | null
+  }>
 }
