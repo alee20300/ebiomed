@@ -10,19 +10,20 @@ import type { Department } from "@/lib/types"
 async function requireAdmin() {
   const user = await getCurrentUser()
   if (!user || user.role !== "admin") {
-    return redirect("/dashboard?error=" + encodeURIComponent("Admin access required"))
+    return redirect(`/dashboard?error=${encodeURIComponent("Admin access required")}`)
   }
   return user
 }
 
 export async function getAllDepartments(): Promise<Department[]> {
   const supabase = await createClient()
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("departments")
     .select("*")
     .order("name")
 
-  return (data || []) as Department[]
+  if (error) return []
+  return data as Department[]
 }
 
 export async function addDepartment(formData: FormData) {
@@ -71,22 +72,23 @@ export async function deleteDepartment(id: string) {
 
 export async function getViewerDepartmentIds(viewerId: string): Promise<string[]> {
   const supabase = await createClient()
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("viewer_departments")
     .select("department_id")
     .eq("viewer_id", viewerId)
 
+  if (error) return []
   return (data || []).map((row: { department_id: string }) => row.department_id)
 }
 
 export async function getViewerDepartments(viewerId: string): Promise<Department[]> {
   const supabase = await createClient()
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("viewer_departments")
     .select("department:department_id(*)")
     .eq("viewer_id", viewerId)
 
-  if (!data) return []
+  if (error) return []
   return data.map((row: { department: unknown }) => (row as { department: Department }).department)
 }
 
@@ -106,17 +108,24 @@ export async function saveViewerDepartments(formData: FormData) {
   }
 
   // Atomic: delete all existing assignments, then insert new ones
-  await supabase
+  const { error: deleteError } = await supabase
     .from("viewer_departments")
     .delete()
     .eq("viewer_id", viewer_id)
+
+  if (deleteError) {
+    return redirect(`/settings?error=${encodeURIComponent(deleteError.message)}`)
+  }
 
   if (department_ids.length > 0) {
     const rows = department_ids.map((dept_id) => ({
       viewer_id,
       department_id: dept_id,
     }))
-    await supabase.from("viewer_departments").insert(rows)
+    const { error: insertError } = await supabase.from("viewer_departments").insert(rows)
+    if (insertError) {
+      return redirect(`/settings?error=${encodeURIComponent(insertError.message)}`)
+    }
   }
 
   revalidatePath("/settings")
