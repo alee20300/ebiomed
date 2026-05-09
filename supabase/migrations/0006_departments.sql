@@ -27,13 +27,8 @@ ALTER TABLE ebiomed.viewer_departments ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Departments viewable by authenticated" ON ebiomed.departments
   FOR SELECT USING (auth.uid() IS NOT NULL);
 
-CREATE POLICY "Departments insertable by admin" ON ebiomed.departments
-  FOR INSERT WITH CHECK (
-    EXISTS (SELECT 1 FROM ebiomed.profiles WHERE id = auth.uid() AND role = 'admin')
-  );
-
-CREATE POLICY "Departments deletable by admin" ON ebiomed.departments
-  FOR DELETE USING (
+CREATE POLICY "Departments editable by admin" ON ebiomed.departments
+  FOR ALL USING (
     EXISTS (SELECT 1 FROM ebiomed.profiles WHERE id = auth.uid() AND role = 'admin')
   );
 
