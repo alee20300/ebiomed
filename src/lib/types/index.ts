@@ -96,3 +96,14 @@ export interface WoComment {
   created_at: string
   author?: { full_name: string; role: string } | null
 }
+
+export interface Department {
+  id: string
+  name: string
+  created_at: string
+}
+
+export interface ViewerDepartment {
+  viewer_id: string
+  department_id: string
+}
