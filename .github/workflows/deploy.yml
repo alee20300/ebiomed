@@ -1,4 +1,4 @@
-name: Build and Deploy
+name: CI Build
 
 on:
   push:
@@ -40,7 +40,6 @@ jobs:
           tags: |
             type=sha,prefix=,suffix=,format=short
             type=ref,event=branch
-            type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -55,20 +54,3 @@ jobs:
             NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
             NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
             NEXT_PUBLIC_SITE_URL=${{ secrets.NEXT_PUBLIC_SITE_URL }}
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    permissions:
-      contents: read
-
-    steps:
-      - name: Trigger Coolify redeploy
-        if: ${{ secrets.COOLIFY_WEBHOOK_URL != '' }}
-        run: |
-          curl -X POST \
-            -H "Authorization: Bearer ${{ secrets.COOLIFY_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            ${{ secrets.COOLIFY_WEBHOOK_URL }} \
-            || echo "Webhook failed - deploy manually in Coolify dashboard"
