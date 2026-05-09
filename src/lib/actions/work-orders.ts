@@ -5,6 +5,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { workOrderSchema, workOrderUpdateSchema } from "@/lib/schemas/work-order"
 import { getCurrentUser } from "@/lib/actions/profiles"
+import { getViewerDepartmentIds } from "@/lib/actions/departments"
 import type { WorkOrder } from "@/lib/types"
 
 export async function createWorkOrder(formData: FormData) {
@@ -49,6 +50,43 @@ export async function createWorkOrder(formData: FormData) {
 
 export async function getWorkOrders(): Promise<WorkOrder[]> {
   const supabase = await createClient()
+  const user = await getCurrentUser()
+
+  if (user?.role === "viewer") {
+    const deptIds = await getViewerDepartmentIds(user.id)
+    if (deptIds.length === 0) return []
+
+    const { data: departments } = await supabase
+      .from("departments")
+      .select("name")
+      .in("id", deptIds)
+
+    const deptNames = (departments || []).map((d: { name: string }) => d.name)
+
+    if (deptNames.length === 0) return []
+
+    const { data: equipIds } = await supabase
+      .from("equipment")
+      .select("id")
+      .in("department", deptNames)
+
+    if (!equipIds) return []
+
+    const equipmentIdList = equipIds.map((e: { id: string }) => e.id)
+
+    if (equipmentIdList.length === 0) return []
+
+    const { data } = await supabase
+      .from("work_orders")
+      .select("*, equipment(*)")
+      .in("equipment_id", equipmentIdList)
+      .in("status", ["open", "in_progress", "on_hold"])
+      .order("created_at", { ascending: false })
+
+    if (!data) return []
+    return data as unknown as WorkOrder[]
+  }
+
   const { data, error } = await supabase
     .from("work_orders")
     .select("*, equipment(*)")
