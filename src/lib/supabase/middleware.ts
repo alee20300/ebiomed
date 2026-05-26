@@ -31,7 +31,7 @@ export async function updateSession(request: NextRequest) {
 
   const url = request.nextUrl
   const isAuthRoute = url.pathname.startsWith("/login") || url.pathname.startsWith("/auth")
-  const isPublicRoute = url.pathname.startsWith("/report")
+  const isPublicRoute = url.pathname.startsWith("/report") || url.pathname.startsWith("/checklist")
   const isPublicFile = url.pathname.startsWith("/_next") || url.pathname.includes(".")
 
   if (isPublicFile) {

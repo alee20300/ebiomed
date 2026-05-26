@@ -97,6 +97,37 @@ export interface WoComment {
   author?: { full_name: string; role: string } | null
 }
 
+export interface ChecklistItem {
+  id: string
+  text: string
+  completed?: boolean
+  status?: "ok" | "not_ok"
+}
+
+export interface ChecklistTemplate {
+  id: string
+  equipment_id: string
+  name: string
+  items: ChecklistItem[]
+  active: boolean
+  frequency: string
+  created_at: string
+}
+
+export interface ChecklistSubmission {
+  id: string
+  equipment_id: string
+  template_id: string | null
+  items: ChecklistItem[]
+  notes: string | null
+  submitted_by_name: string | null
+  submitted_by_department: string | null
+  work_order_id: string | null
+  created_at: string
+  equipment?: Equipment
+  template?: ChecklistTemplate
+}
+
 export interface Department {
   id: string
   name: string

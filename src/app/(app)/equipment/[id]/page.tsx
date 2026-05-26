@@ -2,9 +2,12 @@ import Link from "next/link"
 import { Suspense } from "react"
 import { notFound } from "next/navigation"
 import { getEquipmentById } from "@/lib/actions/equipment"
+import { getChecklistTemplates } from "@/lib/actions/checklist"
 import { EquipmentInfoTab } from "@/components/equipment/equipment-info-tab"
 import { EquipmentHistoryTab } from "@/components/equipment/equipment-history-tab"
 import { EquipmentPMTab } from "@/components/equipment/equipment-pm-tab"
+import { ChecklistHistory } from "@/components/checklist/checklist-history"
+import { ChecklistTemplateManager } from "@/components/checklist/checklist-template-manager"
 import { EquipmentForm } from "@/components/equipment/equipment-form"
 import { BarcodeDisplay } from "@/components/report/barcode-display"
 import { QRCodeDisplay } from "@/components/report/qrcode-display"
@@ -15,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { StatusBadge } from "@/components/shared/status-badge"
-import { ChevronLeft } from "lucide-react"
+import { ChevronLeft, ClipboardCheck } from "lucide-react"
 
 export default async function EquipmentDetailPage({
   params,
@@ -31,6 +34,8 @@ export default async function EquipmentDetailPage({
   if (!equipment) notFound()
 
   const isEditing = edit === "1"
+  const templates = isEditing ? await getChecklistTemplates(id) : []
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"
 
   return (
     <div className="space-y-6">
@@ -61,8 +66,13 @@ export default async function EquipmentDetailPage({
       </div>
 
       {isEditing ? (
-        <div className="rounded-lg border bg-white p-6">
-          <EquipmentForm equipment={equipment} />
+        <div className="space-y-6">
+          <div className="rounded-lg border bg-white p-6">
+            <EquipmentForm equipment={equipment} />
+          </div>
+          <div className="rounded-lg border bg-white p-6">
+            <ChecklistTemplateManager equipmentId={id} templates={templates} />
+          </div>
         </div>
       ) : (
         <Tabs defaultValue="info" className="w-full">
@@ -70,6 +80,10 @@ export default async function EquipmentDetailPage({
             <TabsTrigger value="info">Information</TabsTrigger>
             <TabsTrigger value="history">Work History</TabsTrigger>
             <TabsTrigger value="pm">PM Schedules</TabsTrigger>
+            <TabsTrigger value="checklist">
+              <ClipboardCheck className="mr-1 h-4 w-4" />
+              Checklist
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="info" className="rounded-lg border bg-white p-6">
             <EquipmentInfoTab equipment={equipment} />
@@ -82,6 +96,11 @@ export default async function EquipmentDetailPage({
           <TabsContent value="pm" className="rounded-lg border bg-white p-6">
             <Suspense fallback={<Skeleton className="h-32 w-full" />}>
               <EquipmentPMTab equipmentId={id} />
+            </Suspense>
+          </TabsContent>
+          <TabsContent value="checklist" className="rounded-lg border bg-white p-6">
+            <Suspense fallback={<Skeleton className="h-32 w-full" />}>
+              <ChecklistHistory equipmentId={id} />
             </Suspense>
           </TabsContent>
         </Tabs>
@@ -99,13 +118,11 @@ export default async function EquipmentDetailPage({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">QR Label</CardTitle>
+          <CardTitle className="text-sm">Fault Report QR</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-6 print-only">
-            <QRCodeDisplay
-              value={`${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/report?tag=${equipment.tag_number}`}
-            />
+            <QRCodeDisplay value={`${siteUrl}/report?tag=${equipment.tag_number}`} />
             <div className="text-sm space-y-1">
               <p className="font-semibold text-base">{equipment.name}</p>
               <p className="text-muted-foreground">Tag: {equipment.tag_number}</p>
@@ -114,7 +131,27 @@ export default async function EquipmentDetailPage({
           </div>
           <PrintLabelButton />
           <p className="mt-2 text-xs text-muted-foreground text-center">
-            Scan QR code with phone camera to report a fault
+            Scan QR code to report a fault
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Checklist QR</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-6 print-only">
+            <QRCodeDisplay value={`${siteUrl}/checklist?tag=${equipment.tag_number}`} />
+            <div className="text-sm space-y-1">
+              <p className="font-semibold text-base">{equipment.name}</p>
+              <p className="text-muted-foreground">Tag: {equipment.tag_number}</p>
+              <p className="text-muted-foreground">{equipment.department} — {equipment.location}</p>
+            </div>
+          </div>
+          <PrintLabelButton />
+          <p className="mt-2 text-xs text-muted-foreground text-center">
+            Scan QR code to fill a checklist for this equipment
           </p>
         </CardContent>
       </Card>
