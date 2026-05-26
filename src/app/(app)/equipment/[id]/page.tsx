@@ -9,7 +9,6 @@ import { EquipmentPMTab } from "@/components/equipment/equipment-pm-tab"
 import { ChecklistHistory } from "@/components/checklist/checklist-history"
 import { ChecklistTemplateManager } from "@/components/checklist/checklist-template-manager"
 import { EquipmentForm } from "@/components/equipment/equipment-form"
-import { BarcodeDisplay } from "@/components/report/barcode-display"
 import { QRCodeDisplay } from "@/components/report/qrcode-display"
 import { PrintLabelButton } from "@/components/report/print-label-button"
 import { buttonVariants } from "@/components/ui/button"
@@ -108,17 +107,7 @@ export default async function EquipmentDetailPage({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-sm">Barcode</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center">
-          <BarcodeDisplay value={equipment.tag_number} />
-          <p className="mt-2 text-xs text-gray-500">Scan to report a fault or print for equipment label</p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Fault Report QR</CardTitle>
+          <CardTitle className="text-sm">Equipment QR Code</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-6 print-only">
@@ -131,27 +120,7 @@ export default async function EquipmentDetailPage({
           </div>
           <PrintLabelButton />
           <p className="mt-2 text-xs text-muted-foreground text-center">
-            Scan QR code to report a fault
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm">Checklist QR</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-6 print-only">
-            <QRCodeDisplay value={`${siteUrl}/checklist?tag=${equipment.tag_number}`} />
-            <div className="text-sm space-y-1">
-              <p className="font-semibold text-base">{equipment.name}</p>
-              <p className="text-muted-foreground">Tag: {equipment.tag_number}</p>
-              <p className="text-muted-foreground">{equipment.department} — {equipment.location}</p>
-            </div>
-          </div>
-          <PrintLabelButton />
-          <p className="mt-2 text-xs text-muted-foreground text-center">
-            Scan QR code to fill a checklist for this equipment
+            Scan QR code to report a fault or fill a checklist
           </p>
         </CardContent>
       </Card>
