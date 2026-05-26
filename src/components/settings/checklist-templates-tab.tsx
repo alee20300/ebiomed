@@ -112,16 +112,16 @@ export function ChecklistTemplatesTab({ initialTemplates }: Props) {
 
   return (
     <div className="space-y-4">
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-500">
-            {templates.length} template{templates.length !== 1 ? "s" : ""} across all equipment
-          </p>
-          <Button size="sm" onClick={openNew}>
-            <Plus className="mr-1 h-4 w-4" /> Add Template
-          </Button>
-        </div>
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-gray-500">
+          {templates.length} template{templates.length !== 1 ? "s" : ""} across all equipment
+        </p>
+        <Button size="sm" onClick={openNew}>
+          <Plus className="mr-1 h-4 w-4" /> Add Template
+        </Button>
+      </div>
 
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{editId ? "Edit" : "Add"} Checklist Template</DialogTitle>
