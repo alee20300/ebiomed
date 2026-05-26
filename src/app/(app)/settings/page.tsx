@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 import { getCurrentUser } from "@/lib/actions/profiles"
 import { getAllDepartments } from "@/lib/actions/departments"
 import { getAllTemplates } from "@/lib/actions/checklist"
+import { createEquipment } from "@/lib/actions/equipment"
 import { addDepartment, deleteDepartment } from "@/lib/actions/departments"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -20,7 +21,7 @@ import {
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
-import { UserPlus, Trash2, Settings2, Users, Building2, ClipboardCheck } from "lucide-react"
+import { UserPlus, Trash2, Settings2, Users, Building2, ClipboardCheck, Wrench } from "lucide-react"
 import { signup } from "@/lib/actions/profiles"
 import { ViewerDepartmentsDialog } from "@/components/settings/viewer-departments-dialog"
 import { ChecklistTemplatesTab } from "@/components/settings/checklist-templates-tab"
@@ -181,6 +182,84 @@ async function ChecklistTab() {
   return <ChecklistTemplatesTab initialTemplates={templates} />
 }
 
+function EquipmentTab() {
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Dialog>
+          <DialogTrigger className={cn(buttonVariants({}))}>
+            <UserPlus className="mr-2 h-4 w-4" />
+            Add Equipment
+          </DialogTrigger>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Add New Equipment</DialogTitle>
+            </DialogHeader>
+            <form action={createEquipment} className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="tag_number">Tag Number *</Label>
+                  <Input id="tag_number" name="tag_number" required />
+                </div>
+                <div>
+                  <Label htmlFor="name">Name *</Label>
+                  <Input id="name" name="name" required />
+                </div>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="serial_number">Serial Number</Label>
+                  <Input id="serial_number" name="serial_number" />
+                </div>
+                <div>
+                  <Label htmlFor="model">Model</Label>
+                  <Input id="model" name="model" />
+                </div>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="manufacturer">Manufacturer</Label>
+                  <Input id="manufacturer" name="manufacturer" />
+                </div>
+                <div>
+                  <Label htmlFor="category">Category</Label>
+                  <Input id="category" name="category" />
+                </div>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="department">Department</Label>
+                  <Input id="department" name="department" />
+                </div>
+                <div>
+                  <Label htmlFor="location">Location</Label>
+                  <Input id="location" name="location" />
+                </div>
+              </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="install_date">Install Date</Label>
+                  <Input id="install_date" name="install_date" type="date" />
+                </div>
+                <div>
+                  <Label htmlFor="warranty_expiry">Warranty Expiry</Label>
+                  <Input id="warranty_expiry" name="warranty_expiry" type="date" />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="notes">Notes</Label>
+                <Input id="notes" name="notes" />
+              </div>
+              <Button type="submit" className="w-full">Create Equipment</Button>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+      <p className="text-center text-sm text-gray-500">Use the Equipment page to view and manage all equipment.</p>
+    </div>
+  )
+}
+
 export default async function SettingsPage() {
   const user = await getCurrentUser()
   if (user?.role === "viewer") redirect("/dashboard")
@@ -203,6 +282,10 @@ export default async function SettingsPage() {
             <ClipboardCheck className="mr-1.5 h-4 w-4" />
             Checklists
           </TabsTrigger>
+          <TabsTrigger value="equipment">
+            <Wrench className="mr-1.5 h-4 w-4" />
+            Equipment
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="users" className="rounded-lg border bg-white p-6">
@@ -220,6 +303,12 @@ export default async function SettingsPage() {
         <TabsContent value="checklists" className="rounded-lg border bg-white p-6">
           <Suspense fallback={<Skeleton className="h-32 w-full" />}>
             <ChecklistTab />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="equipment" className="rounded-lg border bg-white p-6">
+          <Suspense fallback={<Skeleton className="h-32 w-full" />}>
+            <EquipmentTab />
           </Suspense>
         </TabsContent>
       </Tabs>
