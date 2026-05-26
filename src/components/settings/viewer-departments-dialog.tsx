@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import {
@@ -55,10 +56,8 @@ export function ViewerDepartmentsDialog({ viewerId, viewerName, departments }: P
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="ghost" size="sm">
-          <Settings2 className="h-4 w-4" />
-        </Button>
+      <DialogTrigger className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}>
+        <Settings2 className="h-4 w-4" />
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
