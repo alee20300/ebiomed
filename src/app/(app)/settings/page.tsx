@@ -25,7 +25,9 @@ import { UserPlus, Trash2, Settings2, Users, Building2, ClipboardCheck, Wrench }
 import { signup } from "@/lib/actions/profiles"
 import { ViewerDepartmentsDialog } from "@/components/settings/viewer-departments-dialog"
 import { ChecklistTemplatesTab } from "@/components/settings/checklist-templates-tab"
-import type { Profile } from "@/lib/types"
+import type { Profile, Equipment } from "@/lib/types"
+import { StatusBadge } from "@/components/shared/status-badge"
+import Link from "next/link"
 
 async function UsersList() {
   const supabase = await createClient()
@@ -182,10 +184,13 @@ async function ChecklistTab() {
   return <ChecklistTemplatesTab initialTemplates={templates} />
 }
 
-function EquipmentTab() {
+async function EquipmentTab() {
+  const equipment = await getEquipment()
+
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-gray-500">{equipment.length} equipment registered</p>
         <Dialog>
           <DialogTrigger className={cn(buttonVariants({}))}>
             <UserPlus className="mr-2 h-4 w-4" />
@@ -255,7 +260,39 @@ function EquipmentTab() {
           </DialogContent>
         </Dialog>
       </div>
-      <p className="text-center text-sm text-gray-500">Use the Equipment page to view and manage all equipment.</p>
+
+      {equipment.length === 0 ? (
+        <p className="py-8 text-center text-sm text-gray-500">No equipment registered yet.</p>
+      ) : (
+        <div className="rounded-lg border bg-white">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Tag</TableHead>
+                <TableHead>Name</TableHead>
+                <TableHead>Department</TableHead>
+                <TableHead>Location</TableHead>
+                <TableHead>Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {equipment.map((eq) => (
+                <TableRow key={eq.id}>
+                  <TableCell className="font-mono text-xs">{eq.tag_number}</TableCell>
+                  <TableCell className="font-medium">
+                    <Link href={`/equipment/${eq.id}`} className="text-primary hover:underline">
+                      {eq.name}
+                    </Link>
+                  </TableCell>
+                  <TableCell className="text-sm text-gray-500">{eq.department || "—"}</TableCell>
+                  <TableCell className="text-sm text-gray-500">{eq.location || "—"}</TableCell>
+                  <TableCell><StatusBadge status={eq.status} /></TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
     </div>
   )
 }
