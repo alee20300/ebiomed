@@ -45,3 +45,17 @@ CREATE POLICY "Checklist submissions insertable by public" ON ebiomed.checklist_
 
 CREATE POLICY "Checklist submissions viewable by authenticated" ON ebiomed.checklist_submissions
   FOR SELECT USING (auth.uid() IS NOT NULL);
+
+-- Public access for end users (read templates, submit checklists)
+CREATE POLICY "Checklist templates viewable by public" ON ebiomed.checklist_templates
+  FOR SELECT USING (true);
+
+CREATE POLICY "Checklist submissions viewable by public" ON ebiomed.checklist_submissions
+  FOR SELECT USING (true);
+
+-- Grant schema and table access
+GRANT USAGE ON SCHEMA ebiomed TO anon, authenticated, service_role;
+GRANT SELECT ON ebiomed.checklist_templates TO anon, authenticated;
+GRANT SELECT, INSERT ON ebiomed.checklist_submissions TO anon;
+GRANT ALL ON ebiomed.checklist_templates TO authenticated;
+GRANT ALL ON ebiomed.checklist_submissions TO authenticated;

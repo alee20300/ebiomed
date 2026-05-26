@@ -73,3 +73,7 @@ CREATE POLICY "Comments viewable by authenticated" ON ebiomed.wo_comments
 
 CREATE POLICY "Comments insertable by authenticated" ON ebiomed.wo_comments
   FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+-- Public access for equipment lookup (end-user checklist and fault reporting)
+CREATE POLICY "Equipment viewable by public" ON ebiomed.equipment
+  FOR SELECT USING (true);
