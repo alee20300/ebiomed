@@ -1,21 +1,69 @@
 "use client"
 
+import { useState } from "react"
 import { saveChecklistTemplate, deleteChecklistTemplate } from "@/lib/actions/checklist"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import type { ChecklistTemplate } from "@/lib/types"
-import { Trash2, Plus } from "lucide-react"
-import { useState } from "react"
+import { Trash2, Plus, X, Check } from "lucide-react"
+
+type FieldType = "checkbox" | "number" | "combobox"
+
+interface TaskDraft {
+  id: string
+  text: string
+  type: FieldType
+  required: boolean
+  options: string[]
+}
 
 interface Props {
   equipmentId: string
   templates: ChecklistTemplate[]
 }
 
+let taskIdCounter = 1000
+
 export function ChecklistTemplateManager({ equipmentId, templates }: Props) {
   const [showNew, setShowNew] = useState(false)
+  const [newName, setNewName] = useState("")
+  const [newFreq, setNewFreq] = useState("daily")
+  const [newTasks, setNewTasks] = useState<TaskDraft[]>([
+    { id: `${++taskIdCounter}`, text: "", type: "checkbox", required: true, options: [] },
+  ])
+
+  const addTask = () => {
+    setNewTasks([...newTasks, { id: `${++taskIdCounter}`, text: "", type: "checkbox", required: false, options: [] }])
+  }
+
+  const removeTask = (id: string) => {
+    if (newTasks.length <= 1) return
+    setNewTasks(newTasks.filter((t) => t.id !== id))
+  }
+
+  const updateTask = (id: string, field: string, value: any) => {
+    setNewTasks(newTasks.map((t) => (t.id === id ? { ...t, [field]: value } : t)))
+  }
+
+  const buildItems = () =>
+    newTasks.filter((t) => t.text.trim()).map((t) => ({
+      text: t.text.trim(),
+      type: t.type,
+      required: t.required,
+      options: t.type === "combobox" ? t.options : undefined,
+    }))
+
+  const itemsJson = JSON.stringify(
+    newTasks.filter((t) => t.text.trim()).map((t, i) => ({
+      id: `item-${i}`,
+      text: t.text.trim(),
+      type: t.type,
+      required: t.required,
+      options: t.options.length > 0 ? t.options : undefined,
+    }))
+  )
 
   return (
     <div className="space-y-4">
@@ -23,16 +71,13 @@ export function ChecklistTemplateManager({ equipmentId, templates }: Props) {
         <h4 className="font-medium">End-User Checklists</h4>
         {!showNew && (
           <Button type="button" variant="outline" size="sm" onClick={() => setShowNew(true)}>
-            <Plus className="mr-1 h-4 w-4" />
-            Add Template
+            <Plus className="mr-1 h-4 w-4" /> Add Template
           </Button>
         )}
       </div>
 
       {templates.length === 0 && !showNew && (
-        <p className="text-sm text-gray-500">
-          No checklist templates defined. End users will not be able to fill checklists for this equipment.
-        </p>
+        <p className="text-sm text-gray-500">No checklist templates defined.</p>
       )}
 
       {templates.map((tpl) => (
@@ -61,26 +106,27 @@ export function ChecklistTemplateManager({ equipmentId, templates }: Props) {
               </div>
             </div>
             <div>
-              <Label htmlFor={`items-${tpl.id}`}>Checklist Items (one per line)</Label>
+              <Label htmlFor={`items-${tpl.id}`}>
+                Checklist Items
+                {tpl.items.some((i) => (i as any).type && (i as any).type !== "checkbox")
+                  ? " (configured with custom types below)"
+                  : ""}
+              </Label>
               <Textarea
                 id={`items-${tpl.id}`}
                 name="items"
-                rows={4}
+                rows={3}
                 defaultValue={tpl.items.map((i) => i.text).join("\n")}
-                placeholder="Equipment exterior is clean&#10;Power cord is undamaged&#10;Display screen is readable"
+                placeholder="Equipment exterior is clean&#10;Power cord is undamaged"
               />
             </div>
             <div className="flex gap-2">
               <Button type="submit" variant="secondary" size="sm">Save</Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                formAction={deleteChecklistTemplate.bind(null, tpl.id, equipmentId)}
-              >
-                <Trash2 className="mr-1 h-3 w-3" />
-                Delete
-              </Button>
+              <form action={deleteChecklistTemplate.bind(null, tpl.id, equipmentId)}>
+                <Button type="submit" variant="outline" size="sm">
+                  <Trash2 className="mr-1 h-3 w-3" /> Delete
+                </Button>
+              </form>
             </div>
           </form>
         </div>
@@ -88,19 +134,29 @@ export function ChecklistTemplateManager({ equipmentId, templates }: Props) {
 
       {showNew && (
         <div className="rounded-lg border bg-gray-50 p-4">
-          <form action={saveChecklistTemplate} className="space-y-3">
+          <form action={saveChecklistTemplate} className="space-y-4">
             <input type="hidden" name="equipment_id" value={equipmentId} />
+            <input type="hidden" name="items" value={itemsJson} />
+
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
                 <Label htmlFor="name-new">Name</Label>
-                <Input id="name-new" name="name" placeholder="Daily Safety Check" required />
+                <Input
+                  id="name-new"
+                  name="name"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="Daily Safety Check"
+                  required
+                />
               </div>
               <div>
                 <Label htmlFor="freq-new">Frequency</Label>
                 <select
                   id="freq-new"
                   name="frequency"
-                  defaultValue="daily"
+                  value={newFreq}
+                  onChange={(e) => setNewFreq(e.target.value)}
                   className="h-9 w-full rounded-lg border border-input bg-card px-3 py-2 text-sm"
                 >
                   <option value="daily">Daily</option>
@@ -110,17 +166,75 @@ export function ChecklistTemplateManager({ equipmentId, templates }: Props) {
                 </select>
               </div>
             </div>
+
+            {/* Task builder */}
             <div>
-              <Label htmlFor="items-new">Checklist Items (one per line)</Label>
-              <Textarea
-                id="items-new"
-                name="items"
-                rows={4}
-                placeholder="Equipment exterior is clean&#10;Power cord is undamaged&#10;Display screen is readable"
-              />
+              <div className="mb-2 flex items-center justify-between">
+                <Label>Checklist tasks</Label>
+                <button type="button" onClick={addTask} className="flex items-center gap-1 text-xs font-medium text-teal-600 hover:text-teal-700">
+                  <Plus className="h-3 w-3" /> Add task
+                </button>
+              </div>
+              <div className="space-y-2">
+                {newTasks.map((task) => (
+                  <div key={task.id} className="rounded-lg border bg-white p-2">
+                    <div className="mb-1 flex items-center gap-2">
+                      <Input
+                        value={task.text}
+                        onChange={(e) => updateTask(task.id, "text", e.target.value)}
+                        placeholder={`Task ${task.id}`}
+                        className="h-8 flex-1 text-sm"
+                      />
+                      <select
+                        value={task.type}
+                        onChange={(e) => updateTask(task.id, "type", e.target.value)}
+                        className="h-8 w-24 rounded-lg border border-input bg-card px-2 text-xs"
+                      >
+                        <option value="checkbox">Checkbox</option>
+                        <option value="number">Number</option>
+                        <option value="combobox">Combobox</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => updateTask(task.id, "required", !task.required)}
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs ${
+                          task.required ? "bg-blue-50 text-blue-600" : "bg-gray-200 text-gray-400"
+                        }`}
+                      >
+                        {task.required ? <Check className="h-3 w-3" /> : "−"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeTask(task.id)}
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                    {task.type === "combobox" && (
+                      <div className="mt-1 flex items-center gap-1">
+                        <span className="text-xs text-gray-400">Options:</span>
+                        <Input
+                          value={(task.options || []).join(", ")}
+                          onChange={(e) =>
+                            updateTask(
+                              task.id,
+                              "options",
+                              e.target.value.split(",").map((s) => s.trim()).filter(Boolean)
+                            )
+                          }
+                          placeholder="Good, Fair, Poor"
+                          className="h-7 flex-1 text-xs"
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
+
             <div className="flex gap-2">
-              <Button type="submit" variant="secondary" size="sm">Create</Button>
+              <Button type="submit" variant="secondary" size="sm" disabled={!newName.trim()}>Create</Button>
               <Button type="button" variant="outline" size="sm" onClick={() => setShowNew(false)}>Cancel</Button>
             </div>
           </form>

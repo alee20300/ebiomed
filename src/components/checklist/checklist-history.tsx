@@ -40,14 +40,28 @@ export async function ChecklistHistory({ equipmentId }: Props) {
             </div>
 
             <div className="space-y-1">
-              {submission.items.map((item) => (
-                <div key={item.id} className="flex items-center gap-2 text-sm">
-                  <span className={item.status === "not_ok" ? "text-red-600" : "text-green-600"}>
-                    {item.status === "not_ok" ? "✗" : "✓"}
-                  </span>
-                  <span className={item.status === "not_ok" ? "" : "text-gray-600"}>{item.text}</span>
-                </div>
-              ))}
+              {submission.items.map((item) => {
+                const itemType = (item as any).type || "checkbox"
+                const itemValue = (item as any).value || ""
+                const isFailed = item.status === "not_ok"
+                const isCheckbox = itemType === "checkbox"
+
+                return (
+                  <div key={item.id} className="flex items-center gap-2 text-sm">
+                    <span className={isFailed ? "text-red-600" : "text-green-600"}>
+                      {isFailed ? "✗" : "✓"}
+                    </span>
+                    <span className={isFailed ? "" : "text-gray-600"}>
+                      {item.text}
+                      {!isCheckbox && itemValue && (
+                        <span className="ml-1 font-medium">
+                          — {itemValue}
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                )
+              })}
             </div>
 
             {(submission.submitted_by_name || submission.submitted_by_department || submission.notes) && (

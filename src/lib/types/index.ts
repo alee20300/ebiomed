@@ -53,7 +53,11 @@ export interface PMSchedule {
 export interface ChecklistItem {
   id: string
   text: string
-  completed: boolean
+  completed?: boolean
+  status?: "ok" | "not_ok"
+  type?: "checkbox" | "number" | "combobox"
+  required?: boolean
+  options?: string[]
 }
 
 export interface Part {
@@ -95,13 +99,6 @@ export interface WoComment {
   text: string
   created_at: string
   author?: { full_name: string; role: string } | null
-}
-
-export interface ChecklistItem {
-  id: string
-  text: string
-  completed?: boolean
-  status?: "ok" | "not_ok"
 }
 
 export interface ChecklistTemplate {
