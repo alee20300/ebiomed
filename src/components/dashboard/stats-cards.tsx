@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Wrench, AlertTriangle, CalendarCheck, Package } from "lucide-react"
 
 interface Stats {
-  totalEquipment: number
+  machinesWithIssues: number
   openWorkOrders: number
   overduePMs: number
   lowStockParts: number
@@ -10,7 +10,7 @@ interface Stats {
 
 export function StatsCards({ stats }: { stats: Stats }) {
   const cards = [
-    { title: "Total Equipment", value: stats.totalEquipment, icon: Wrench, color: "text-blue-600" },
+    { title: "Machines with Issues", value: stats.machinesWithIssues, icon: Wrench, color: "text-blue-600" },
     { title: "Open Work Orders", value: stats.openWorkOrders, icon: AlertTriangle, color: "text-orange-600" },
     { title: "Overdue PMs", value: stats.overduePMs, icon: CalendarCheck, color: "text-red-600" },
     { title: "Low Stock Parts", value: stats.lowStockParts, icon: Package, color: "text-yellow-600" },
