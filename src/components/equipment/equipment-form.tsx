@@ -15,9 +15,11 @@ import type { Equipment } from "@/lib/types"
 
 interface Props {
   equipment?: Equipment
+  onCancel?: () => void
+  hideCancel?: boolean
 }
 
-export function EquipmentForm({ equipment }: Props) {
+export function EquipmentForm({ equipment, onCancel, hideCancel }: Props) {
   const searchParams = useSearchParams()
   const error = searchParams.get("error")
 
@@ -142,14 +144,14 @@ export function EquipmentForm({ equipment }: Props) {
       </div>
 
       <div className="flex gap-3">
-        <Button
-          type="submit"
-        >
+        <Button type="submit">
           {equipment ? "Update Equipment" : "Create Equipment"}
         </Button>
-        <Button variant="outline" type="button" onClick={() => history.back()}>
-          Cancel
-        </Button>
+        {!hideCancel && (
+          <Button variant="outline" type="button" onClick={() => onCancel?.() || history.back()}>
+            Cancel
+          </Button>
+        )}
       </div>
     </form>
   )
