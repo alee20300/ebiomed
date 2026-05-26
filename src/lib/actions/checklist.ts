@@ -17,6 +17,16 @@ export async function getChecklistTemplates(equipmentId: string): Promise<Checkl
   return (data || []) as unknown as ChecklistTemplate[]
 }
 
+export async function getAllTemplates(): Promise<ChecklistTemplate[]> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from("checklist_templates")
+    .select("*, equipment:equipment_id(name, tag_number)")
+    .order("created_at", { ascending: false })
+
+  return (data || []) as unknown as ChecklistTemplate[]
+}
+
 export async function getEquipmentByTag(tagNumber: string) {
   const supabase = await createClient()
   const { data } = await supabase
