@@ -13,14 +13,25 @@ export async function createPMSchedule(formData: FormData) {
   const raw = Object.fromEntries(formData)
 
   const checklistRaw = (formData.get("checklist") as string) || ""
-  const checklist = checklistRaw
-    .split("\n")
-    .map((text, index) => ({
-      id: `check-${index}`,
-      text: text.trim(),
-      completed: false,
-    }))
-    .filter((item) => item.text.length > 0)
+  let checklist: Array<{ id: string; text: string; completed: boolean; type?: string; required?: boolean }> = []
+
+  // Support both JSON format (from new modal) and newline format (from old form)
+  if (checklistRaw.startsWith("[")) {
+    try {
+      checklist = JSON.parse(checklistRaw)
+    } catch {
+      checklist = []
+    }
+  } else {
+    checklist = checklistRaw
+      .split("\n")
+      .map((text, index) => ({
+        id: `check-${index}`,
+        text: text.trim(),
+        completed: false,
+      }))
+      .filter((item) => item.text.length > 0)
+  }
 
   const activeRaw = formData.get("active")
   const active = activeRaw === "true"

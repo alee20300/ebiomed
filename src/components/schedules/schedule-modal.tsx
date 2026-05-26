@@ -1,10 +1,13 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { X, Plus, Trash2 } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
+import { createPMSchedule } from "@/lib/actions/pm-schedules"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import type { Equipment } from "@/lib/types"
 
 type FieldType = "checkbox" | "number" | "combobox"
 
@@ -50,17 +53,26 @@ function getFrequencyLabel(freq: string): string {
 
 let taskCounter = 0
 
-export function ScheduleModal({ open, onClose, onSave }: Props) {
+export function ScheduleModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const supabase = createClient()
   const [name, setName] = useState("")
   const [frequency, setFrequency] = useState("weekly")
-  const [firstDueDate, setFirstDueDate] = useState(() => {
-    const d = new Date()
-    return d.toISOString().slice(0, 10)
-  })
+  const [firstDueDate, setFirstDueDate] = useState(() => new Date().toISOString().slice(0, 10))
+  const [equipmentId, setEquipmentId] = useState("")
+  const [equipment, setEquipment] = useState<Equipment[]>([])
   const [tasks, setTasks] = useState<TaskItem[]>([
     { id: `${++taskCounter}`, text: "", type: "checkbox", required: true },
   ])
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    supabase
+      .from("equipment")
+      .select("*")
+      .eq("status", "active")
+      .order("name")
+      .then(({ data }) => setEquipment((data || []) as Equipment[]))
+  }, [])
 
   if (!open) return null
 
@@ -78,11 +90,31 @@ export function ScheduleModal({ open, onClose, onSave }: Props) {
   }
 
   const handleSave = async () => {
-    if (!name.trim()) return
+    if (!name.trim() || !equipmentId) return
     setSaving(true)
+
     const validTasks = tasks.filter((t) => t.text.trim().length > 0)
-    onSave({ name: name.trim(), frequency, firstDueDate, tasks: validTasks })
-    setSaving(false)
+    const checklist = validTasks.map((t, i) => ({
+      id: `check-${i}`,
+      text: t.text.trim(),
+      completed: false,
+      type: t.type,
+      required: t.required,
+    }))
+
+    const form = new FormData()
+    form.set("equipment_id", equipmentId)
+    form.set("frequency_days", String(getFrequencyDays(frequency)))
+    form.set("description", name.trim())
+    form.set("checklist", JSON.stringify(checklist))
+    form.set("active", "true")
+
+    try {
+      await createPMSchedule(form)
+    } finally {
+      setSaving(false)
+      onClose()
+    }
   }
 
   return (
@@ -111,6 +143,21 @@ export function ScheduleModal({ open, onClose, onSave }: Props) {
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Daily startup check"
             />
+          </div>
+
+          <div>
+            <Label htmlFor="sch-equipment">Equipment *</Label>
+            <select
+              id="sch-equipment"
+              value={equipmentId}
+              onChange={(e) => setEquipmentId(e.target.value)}
+              className="h-9 w-full rounded-lg border border-input bg-card px-3 py-2 text-sm text-foreground outline-none focus-visible:outline-2 focus-visible:outline-primary focus-visible:outline-offset-[-1px]"
+            >
+              <option value="">Select equipment...</option>
+              {equipment.map((eq) => (
+                <option key={eq.id} value={eq.id}>{eq.tag_number} — {eq.name}</option>
+              ))}
+            </select>
           </div>
 
           <div>

@@ -1,12 +1,10 @@
-import Link from "next/link"
 import { redirect } from "next/navigation"
 import { Suspense } from "react"
 import { getPMSchedules } from "@/lib/actions/pm-schedules"
 import { getCurrentUser } from "@/lib/actions/profiles"
 import { PMTable } from "@/components/pm-schedules/pm-table"
+import { PMActions } from "@/components/pm-schedules/pm-actions"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Button } from "@/components/ui/button"
-import { Plus } from "lucide-react"
 
 function Loading() {
   return <div className="space-y-3">
@@ -29,14 +27,7 @@ export default async function PMSchedulesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold tracking-tight">PM Schedules</h2>
-        {!isViewer && (
-          <Link href="/pm-schedules/new">
-            <Button>
-              <Plus className="mr-1 h-4 w-4" />
-              New PM Schedule
-            </Button>
-          </Link>
-        )}
+        <PMActions isViewer={isViewer} />
       </div>
       <Suspense fallback={<Loading />}>
         <PMList />
