@@ -47,8 +47,21 @@ jobs:
       - name: Audit dependencies
         run: npm audit --audit-level=high --omit=dev
 
+      - name: Set branch-specific variables
+        id: vars
+        run: |
+          if [ "${{ github.ref_name }}" = "production" ]; then
+            echo "PREFIX=PROD" >> $GITHUB_OUTPUT
+          else
+            echo "PREFIX=DEV" >> $GITHUB_OUTPUT
+          fi
+
       - name: Build
         run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets[format('{0}_NEXT_PUBLIC_SUPABASE_URL', steps.vars.outputs.PREFIX)] }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets[format('{0}_NEXT_PUBLIC_SUPABASE_ANON_KEY', steps.vars.outputs.PREFIX)] }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets[format('{0}_NEXT_PUBLIC_SITE_URL', steps.vars.outputs.PREFIX)] }}
 
   publish:
     name: Publish
