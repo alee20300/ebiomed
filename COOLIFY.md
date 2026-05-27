@@ -1,14 +1,15 @@
 # Coolify Deployment Guide
 
-## Production Supabase
+## Production Supabase (NovelTech)
 
-**Instance URL:** `http://supabasekong-blt021qyd19fli8m4lx3ig03.72.62.121.172.sslip.io`
+**Instance URL:** `http://supabasekong-xebsia6795nd6fpm7kcqlege.72.62.121.172.sslip.io`
+**Admin:** admin@ebiomed.local / password123
 
 ### Apply Migrations to Production
 
 ```bash
 # Set production database URL
-export DB_URL="postgresql://postgres:postgres@72.62.121.172:5432/postgres"
+export DB_URL="postgresql://postgres:SUgXRawpWfMwqDkA1BEiw0ckaDwo8J57@72.62.121.172:5432/postgres"
 
 # Apply migrations in order
 psql $DB_URL < supabase/migrations/0001_initial_schema.sql
@@ -16,6 +17,8 @@ psql $DB_URL < supabase/migrations/0002_parts_trigger.sql
 psql $DB_URL < supabase/migrations/0003_fault_report_columns.sql
 psql $DB_URL < supabase/migrations/0004_wo_comments.sql
 psql $DB_URL < supabase/migrations/0005_rls_policies.sql
+psql $DB_URL < supabase/migrations/0006_departments.sql
+psql $DB_URL < supabase/migrations/0006_end_user_checklists.sql
 
 # Seed data (optional)
 psql $DB_URL < supabase/seed.sql
@@ -27,9 +30,12 @@ Set in **Settings → Secrets and variables → Actions**:
 
 | Secret | Value |
 |--------|-------|
-| `NEXT_PUBLIC_SUPABASE_URL` | `http://supabasekong-blt021qyd19fli8m4lx3ig03.72.62.121.172.sslip.io` |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...` |
-| `NEXT_PUBLIC_SITE_URL` | Your production domain |
+| `DEV_NEXT_PUBLIC_SUPABASE_URL` | `http://supabasekong-xebsia6795nd6fpm7kcqlege.72.62.121.172.sslip.io` |
+| `DEV_NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...` |
+| `PROD_NEXT_PUBLIC_SUPABASE_URL` | `http://supabasekong-xebsia6795nd6fpm7kcqlege.72.62.121.172.sslip.io` |
+| `PROD_NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...` |
+| `DEV_NEXT_PUBLIC_SITE_URL` | Your dev domain |
+| `PROD_NEXT_PUBLIC_SITE_URL` | Your production domain |
 | `COOLIFY_WEBHOOK_URL` | From Coolify dashboard |
 | `COOLIFY_TOKEN` | From Coolify settings |
 
@@ -78,7 +84,7 @@ git push origin production
 Add these in Coolify dashboard for the resource:
 
 ```
-NEXT_PUBLIC_SUPABASE_URL=http://supabasekong-blt021qyd19fli8m4lx3ig03.72.62.121.172.sslip.io
-NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc3ODE1MDQwMCwiZXhwIjo0OTMzODI0MDAwLCJyb2xlIjoiYW5vbiJ9.QTpYJJy34xYHxDOWZAcUM6BakmRTIX-4s_XzJv1ZwQA
+NEXT_PUBLIC_SUPABASE_URL=http://supabasekong-xebsia6795nd6fpm7kcqlege.72.62.121.172.sslip.io
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTc3OTg4MDM4MCwiZXhwIjo0OTM1NTUzOTgwLCJyb2xlIjoiYW5vbiJ9.bwapNU7LxmZE5WY6IsMxn-2VxbQeRSPgzGUqdxeQidM
 NEXT_PUBLIC_SITE_URL=https://your-domain.com
 ```

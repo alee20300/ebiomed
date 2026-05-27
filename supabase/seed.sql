@@ -1,3 +1,70 @@
+-- Seed admin user (password: password123)
+-- Requires pgcrypto extension (enabled by default in Supabase)
+create extension if not exists "pgcrypto" with schema extensions;
+
+DO $$
+DECLARE
+  _user_id uuid := gen_random_uuid();
+BEGIN
+  -- Skip if admin already exists
+  IF NOT EXISTS (SELECT 1 FROM auth.users WHERE email = 'admin@ebiomed.local') THEN
+    INSERT INTO auth.users (
+      instance_id,
+      id,
+      aud,
+      role,
+      email,
+      encrypted_password,
+      email_confirmed_at,
+      created_at,
+      updated_at,
+      raw_app_meta_data,
+      raw_user_meta_data,
+      confirmation_token,
+      recovery_token,
+      email_change_token_new,
+      email_change
+    ) VALUES (
+      '00000000-0000-0000-0000-000000000000',
+      _user_id,
+      'authenticated',
+      'authenticated',
+      'admin@ebiomed.local',
+      extensions.crypt('password123', extensions.gen_salt('bf')),
+      now(),
+      now(),
+      now(),
+      '{"provider":"email","providers":["email"]}',
+      '{"full_name":"Admin User"}',
+      '',
+      '',
+      '',
+      ''
+    );
+
+    INSERT INTO auth.identities (
+      provider_id,
+      user_id,
+      identity_data,
+      provider,
+      last_sign_in_at,
+      created_at,
+      updated_at
+    ) VALUES (
+      _user_id,
+      _user_id,
+      jsonb_build_object('sub', _user_id::text, 'email', 'admin@ebiomed.local'),
+      'email',
+      now(),
+      now(),
+      now()
+    );
+
+    INSERT INTO ebiomed.profiles (id, full_name, role)
+    VALUES (_user_id, 'Admin User', 'admin');
+  END IF;
+END $$;
+
 -- Sample equipment
 insert into equipment (tag_number, serial_number, name, model, manufacturer, department, location, status, category, install_date, warranty_expiry) values
 ('BM-001', 'SN-2024001', 'Ventilator V500', 'V500', 'Drager', 'ICU', 'ICU Room 3', 'active', 'Ventilator', '2024-01-15', '2027-01-15'),
