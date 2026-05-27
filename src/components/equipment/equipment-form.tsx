@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { ReasonForChange } from "@/components/shared/reason-for-change"
 import { AlertCircle } from "lucide-react"
 import type { Equipment } from "@/lib/types"
 
@@ -133,6 +134,44 @@ export function EquipmentForm({ equipment, onCancel, hideCancel }: Props) {
         </div>
       </div>
 
+      <div className="border-t pt-4">
+        <p className="mb-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">Asset Hierarchy</p>
+        <div>
+          <Label htmlFor="parent_id">Parent Asset ID</Label>
+          <Input
+            id="parent_id"
+            name="parent_id"
+            placeholder="UUID of parent asset (optional)"
+            defaultValue={equipment?.parent_id || ""}
+          />
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Child assets inherit department and location from parent. Leave empty for top-level assets.
+          </p>
+        </div>
+      </div>
+
+      <div className="border-t pt-4">
+        <p className="mb-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">Nomenclature (GMDN / UDI)</p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <Label htmlFor="gmdn_code">GMDN Code</Label>
+            <Input id="gmdn_code" name="gmdn_code" defaultValue={equipment?.gmdn_code || ""} />
+          </div>
+          <div>
+            <Label htmlFor="gmdn_term">GMDN Term</Label>
+            <Input id="gmdn_term" name="gmdn_term" defaultValue={equipment?.gmdn_term || ""} />
+          </div>
+          <div>
+            <Label htmlFor="udi_di">UDI-DI (Device Identifier)</Label>
+            <Input id="udi_di" name="udi_di" defaultValue={equipment?.udi_di || ""} />
+          </div>
+          <div>
+            <Label htmlFor="udi_pi">UDI-PI (Production Identifier)</Label>
+            <Input id="udi_pi" name="udi_pi" defaultValue={equipment?.udi_pi || ""} />
+          </div>
+        </div>
+      </div>
+
       <div>
         <Label htmlFor="notes">Notes</Label>
         <Textarea
@@ -141,6 +180,23 @@ export function EquipmentForm({ equipment, onCancel, hideCancel }: Props) {
           rows={3}
           defaultValue={equipment?.notes || ""}
         />
+      </div>
+
+      <div className="border-t pt-4">
+        <Label htmlFor="reason" className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          <AlertCircle className="h-3.5 w-3.5" />
+          Reason for Change (required for compliance)
+        </Label>
+        <Textarea
+          id="reason"
+          name="reason"
+          placeholder="e.g., Added equipment to asset registry per department request..."
+          className="mt-1.5 min-h-[60px] resize-none text-sm"
+          rows={2}
+        />
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          Required per FDA 21 CFR Part 11. Every change must include a documented reason.
+        </p>
       </div>
 
       <div className="flex gap-3">

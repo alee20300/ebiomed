@@ -15,6 +15,11 @@ export const equipmentSchema = z.object({
   install_date: z.string().optional(),
   warranty_expiry: z.string().optional(),
   notes: z.string().optional(),
+  parent_id: z.string().uuid().optional().or(z.literal("")),
+  gmdn_code: z.string().optional(),
+  gmdn_term: z.string().optional(),
+  udi_di: z.string().optional(),
+  udi_pi: z.string().optional(),
   reason: z.string().min(5, "Reason for change is required").max(500, "Reason too long"),
 })
 

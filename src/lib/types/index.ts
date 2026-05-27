@@ -17,6 +17,13 @@ export interface Equipment {
   calibration_parameters: CalibrationParameter[] | null
   last_calibrated: string | null
   next_calibration_due: string | null
+  parent_id: string | null
+  parent?: Equipment | null
+  children?: Equipment[] | null
+  gmdn_code: string | null
+  gmdn_term: string | null
+  udi_di: string | null
+  udi_pi: string | null
   created_at: string
   updated_at: string
   deleted_at: string | null

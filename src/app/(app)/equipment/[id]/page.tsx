@@ -8,6 +8,7 @@ import { EquipmentPMTab } from "@/components/equipment/equipment-pm-tab"
 import { EquipmentCalibrationTab } from "@/components/calibration/equipment-calibration-tab"
 import { CalibrationExecution } from "@/components/calibration/calibration-execution"
 import { EquipmentCertificatesTab } from "@/components/calibration/equipment-certificates-tab"
+import { EquipmentParentChild } from "@/components/equipment/equipment-parent-child"
 import { ChecklistHistory } from "@/components/checklist/checklist-history"
 import { QRCodeDisplay } from "@/components/report/qrcode-display"
 import { PrintLabelButton } from "@/components/report/print-label-button"
@@ -123,6 +124,8 @@ export default async function EquipmentDetailPage({
           </p>
         </CardContent>
       </Card>
+
+      <EquipmentParentChild equipmentId={id} parentId={equipment.parent_id} />
     </div>
   )
 }
