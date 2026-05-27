@@ -162,3 +162,14 @@ export interface AuditLogEntry {
   reason: string
   profile?: Profile | null
 }
+
+export interface Signature {
+  id: string
+  signer_id: string
+  record_type: string
+  record_id: string
+  meaning: "Verified" | "Calibrated" | "Approved" | "Reviewed"
+  signed_at: string
+  signature_hash: string | null
+  signer?: Profile | null
+}

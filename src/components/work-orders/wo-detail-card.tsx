@@ -1,9 +1,9 @@
 "use client"
 
-import { useSearchParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { updateWorkOrderStatus } from "@/lib/actions/work-orders"
+import { getSignatures } from "@/lib/actions/signatures"
 import { StatusBadge } from "@/components/shared/status-badge"
 import { PriorityBadge } from "@/components/shared/priority-badge"
 import { formatDateTime } from "@/lib/utils/format"
@@ -15,17 +15,27 @@ import {
 } from "@/components/ui/select"
 import { AlertCircle } from "lucide-react"
 import { PartsUsageForm } from "@/components/work-orders/parts-usage-form"
-import type { WorkOrder } from "@/lib/types"
+import { ReAuthDialog } from "@/components/shared/reauth-dialog"
+import { ReasonForChange } from "@/components/shared/reason-for-change"
+import { SignatureBlock } from "@/components/shared/signature-block"
+import type { WorkOrder, Signature } from "@/lib/types"
 
 interface Props {
   workOrder: WorkOrder
 }
 
 export function WorkOrderDetailCard({ workOrder }: Props) {
-  const searchParams = useSearchParams()
-  const error = searchParams.get("error")
   const [technicians, setTechnicians] = useState<Array<{ id: string; full_name: string; role: string }>>([])
   const [partsUsed, setPartsUsed] = useState<Array<{ part_name: string; quantity_used: number; used_at: string }>>([])
+  const [signatures, setSignatures] = useState<Signature[]>([])
+  const [status, setStatus] = useState("")
+  const [assignedTo, setAssignedTo] = useState(workOrder.assigned_to || "")
+  const [resolutionNotes, setResolutionNotes] = useState("")
+  const [reason, setReason] = useState("")
+  const [reasonError, setReasonError] = useState("")
+  const [reauthOpen, setReauthOpen] = useState(false)
+  const [updating, setUpdating] = useState(false)
+  const [error, setError] = useState("")
   const supabase = createClient()
 
   useEffect(() => {
@@ -35,7 +45,7 @@ export function WorkOrderDetailCard({ workOrder }: Props) {
       .select("id, full_name, role")
       .in("role", ["technician", "admin"])
       .order("full_name")
-      .then(({ data }) => setTechnicians((data as any) || []))
+      .then(({ data }) => setTechnicians((data as Array<{ id: string; full_name: string; role: string }>) || []))
 
     supabase
       .schema("ebiomed")
@@ -43,10 +53,57 @@ export function WorkOrderDetailCard({ workOrder }: Props) {
       .select("quantity_used, used_at, part:part_id(name)")
       .eq("work_order_id", workOrder.id)
       .order("used_at", { ascending: false })
-      .then(({ data }) => setPartsUsed((data || []) as any))
+      .then(({ data }) => setPartsUsed((data || []) as Array<{ part_name: string; quantity_used: number; used_at: string }>))
+
+    getSignatures("work_order", workOrder.id).then((data) => setSignatures(data as Signature[]))
   }, [workOrder.id, supabase])
 
   const isComplete = workOrder.status === "completed" || workOrder.status === "cancelled"
+
+  const needsReauth = status === "completed" || status === "cancelled"
+
+  const handleUpdateClick = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!status) return
+    if (!reason || reason.length < 5) {
+      setReasonError("Reason for change is required (min 5 characters)")
+      return
+    }
+    setReasonError("")
+
+    if (needsReauth) {
+      setReauthOpen(true)
+    } else {
+      executeUpdate()
+    }
+  }
+
+  const executeUpdate = async () => {
+    setUpdating(true)
+    setError("")
+    try {
+      const formData = new FormData()
+      formData.set("status", status)
+      formData.set("assigned_to", assignedTo)
+      formData.set("resolution_notes", resolutionNotes)
+      formData.set("reason", reason)
+
+      await updateWorkOrderStatus(workOrder.id, formData)
+    } catch {
+      setError("Failed to update status. Please try again.")
+    }
+    setUpdating(false)
+  }
+
+  const handleReauthSuccess = () => {
+    setReauthOpen(false)
+    executeUpdate()
+  }
+
+  const handleReauthCancel = () => {
+    setReauthOpen(false)
+  }
 
   return (
     <div className="space-y-6">
@@ -124,7 +181,7 @@ export function WorkOrderDetailCard({ workOrder }: Props) {
           <div className="mt-1 space-y-1">
             {partsUsed.map((pu, index) => (
               <div key={index} className="flex items-center gap-2 text-sm">
-                <span className="font-medium">{(pu as any).part?.name || pu.part_name}</span>
+                <span className="font-medium">{(pu as Record<string, unknown>).part?.name || pu.part_name}</span>
                 <span className="text-muted-foreground">× {pu.quantity_used}</span>
                 <span className="ml-auto text-xs text-muted-foreground">{formatDateTime(pu.used_at)}</span>
               </div>
@@ -134,12 +191,12 @@ export function WorkOrderDetailCard({ workOrder }: Props) {
       )}
 
       {!isComplete && (
-        <form action={updateWorkOrderStatus.bind(null, workOrder.id)} className="space-y-4 rounded-lg border bg-gray-50 p-4">
+        <form onSubmit={handleUpdateClick} className="space-y-4 rounded-lg border bg-gray-50 p-4">
           <h4 className="font-medium">Update Status</h4>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <Label htmlFor="status">New Status</Label>
-              <Select name="status">
+              <Select value={status} onValueChange={setStatus}>
                 <SelectTrigger><SelectValue placeholder="Select status..." /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="in_progress">In Progress</SelectItem>
@@ -151,7 +208,7 @@ export function WorkOrderDetailCard({ workOrder }: Props) {
             </div>
             <div>
               <Label htmlFor="assigned_to">Assign To</Label>
-              <Select name="assigned_to" defaultValue={workOrder.assigned_to || ""}>
+              <Select value={assignedTo} onValueChange={setAssignedTo}>
                 <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">Unassigned</SelectItem>
@@ -166,10 +223,20 @@ export function WorkOrderDetailCard({ workOrder }: Props) {
           </div>
           <div>
             <Label htmlFor="resolution_notes">Resolution Notes</Label>
-            <Textarea id="resolution_notes" name="resolution_notes" rows={3} />
+            <Textarea
+              id="resolution_notes"
+              value={resolutionNotes}
+              onChange={(e) => setResolutionNotes(e.target.value)}
+              rows={3}
+            />
           </div>
-          <Button type="submit">
-            Update
+          <ReasonForChange
+            value={reason}
+            onChange={setReason}
+            error={reasonError}
+          />
+          <Button type="submit" disabled={updating}>
+            {updating ? "Updating..." : "Update"}
           </Button>
         </form>
       )}
@@ -180,6 +247,22 @@ export function WorkOrderDetailCard({ workOrder }: Props) {
           <PartsUsageForm workOrderId={workOrder.id} />
         </div>
       )}
+
+      {signatures.length > 0 && (
+        <div className="space-y-2">
+          <h4 className="text-sm font-medium text-gray-500">Electronic Signatures</h4>
+          <SignatureBlock signatures={signatures} compact />
+        </div>
+      )}
+
+      <ReAuthDialog
+        open={reauthOpen}
+        onOpenChange={setReauthOpen}
+        actionLabel={`Work Order #${workOrder.id.slice(0, 8)} — Mark as ${status}`}
+        meaning={status === "completed" ? "Verified" : "Reviewed"}
+        onSuccess={handleReauthSuccess}
+        onCancel={handleReauthCancel}
+      />
     </div>
   )
 }

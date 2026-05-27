@@ -3,9 +3,10 @@
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
+import { logAudit } from "@/lib/actions/audit"
+import { recordSignature } from "@/lib/actions/signatures"
 import { pmScheduleSchema } from "@/lib/schemas/pm-schedule"
 import { getCurrentUser } from "@/lib/actions/profiles"
-import { logAudit } from "@/lib/actions/audit"
 import type { PMSchedule } from "@/lib/types"
 import { addDays } from "date-fns"
 
@@ -160,6 +161,8 @@ export async function completePMTask(workOrderId: string, pmScheduleId: string) 
     { field: "last_completed", newValue: now },
     { field: "next_due", newValue: next }
   ], "PM task completed")
+
+  await recordSignature("pm_schedule", pmScheduleId, "Verified")
 
   revalidatePath("/pm-schedules")
   revalidatePath("/dashboard")

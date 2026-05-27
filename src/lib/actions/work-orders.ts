@@ -3,10 +3,8 @@
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
-import { workOrderSchema, workOrderUpdateSchema } from "@/lib/schemas/work-order"
-import { getCurrentUser } from "@/lib/actions/profiles"
-import { getViewerDepartmentIds } from "@/lib/actions/departments"
 import { logAudit } from "@/lib/actions/audit"
+import { recordSignature } from "@/lib/actions/signatures"
 import type { WorkOrder } from "@/lib/types"
 
 export async function createWorkOrder(formData: FormData) {
@@ -184,6 +182,15 @@ export async function updateWorkOrderStatus(id: string, formData: FormData) {
   await logAudit("work_orders", id, "update", [
     { field: "status", oldValue: current.status, newValue: newStatus }
   ], statusReason)
+
+  // Record electronic signature for completed/cancelled
+  if (parsed.data.status === "completed" || parsed.data.status === "cancelled") {
+    await recordSignature(
+      "work_order",
+      id,
+      parsed.data.status === "completed" ? "Verified" : "Reviewed"
+    )
+  }
 
   // If completed, update equipment status back to active
   if (parsed.data.status === "completed") {
