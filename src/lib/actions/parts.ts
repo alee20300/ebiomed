@@ -5,6 +5,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { partSchema, partsUsageSchema } from "@/lib/schemas/parts"
 import { getCurrentUser } from "@/lib/actions/profiles"
+import { logAudit } from "@/lib/actions/audit"
 import type { Part } from "@/lib/types"
 
 export async function createPart(formData: FormData) {
@@ -17,10 +18,14 @@ export async function createPart(formData: FormData) {
     return redirect(`/parts?error=${encodeURIComponent(messages)}`)
   }
 
-  const { error } = await supabase.from("parts").insert(parsed.data)
+  const { data, error } = await supabase.from("parts").insert(parsed.data).select().single()
   if (error) {
     return redirect(`/parts?error=${encodeURIComponent(error.message)}`)
   }
+
+  await logAudit("parts", data.id, "insert", [
+    { newValue: JSON.stringify(parsed.data) }
+  ], parsed.data.reason)
 
   revalidatePath("/parts")
   revalidatePath("/dashboard")
@@ -62,6 +67,10 @@ export async function restockPart(formData: FormData) {
     return redirect(`/parts?error=${encodeURIComponent(error.message)}`)
   }
 
+  await logAudit("parts", raw.id as string, "update", [
+    { field: "quantity_on_hand", oldValue: String(part.quantity_on_hand), newValue: String(newQuantity) }
+  ], (raw.reason as string) || "Restock")
+
   revalidatePath("/parts")
   redirect("/parts")
 }
@@ -79,14 +88,18 @@ export async function consumeParts(formData: FormData) {
     return redirect(`/work-orders/${raw.work_order_id}?error=${encodeURIComponent(messages)}`)
   }
 
-  const { error } = await supabase.from("parts_usage").insert({
+  const { data, error } = await supabase.from("parts_usage").insert({
     ...parsed.data,
     used_by: user.id,
-  })
+  }).select().single()
 
   if (error) {
     return redirect(`/work-orders/${raw.work_order_id}?error=${encodeURIComponent(error.message)}`)
   }
+
+  await logAudit("parts_usage", data.id, "insert", [
+    { newValue: JSON.stringify({ work_order_id: parsed.data.work_order_id, part_id: parsed.data.part_id, quantity_used: parsed.data.quantity_used }) }
+  ], parsed.data.reason)
 
   revalidatePath("/parts")
   revalidatePath(`/work-orders/${raw.work_order_id}`)

@@ -148,3 +148,17 @@ export interface ViewerDepartment {
   department_id: string
   updated_at: string
 }
+
+export interface AuditLogEntry {
+  id: string
+  table_name: string
+  record_id: string
+  action: "insert" | "update" | "delete"
+  field_name: string | null
+  old_value: string | null
+  new_value: string | null
+  changed_by: string
+  changed_at: string
+  reason: string
+  profile?: Profile | null
+}

@@ -15,6 +15,7 @@ export const equipmentSchema = z.object({
   install_date: z.string().optional(),
   warranty_expiry: z.string().optional(),
   notes: z.string().optional(),
+  reason: z.string().min(5, "Reason for change is required").max(500, "Reason too long"),
 })
 
 export type EquipmentFormData = z.infer<typeof equipmentSchema>

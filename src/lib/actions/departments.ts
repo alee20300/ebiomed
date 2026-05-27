@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getCurrentUser } from "@/lib/actions/profiles"
+import { logAudit } from "@/lib/actions/audit"
 import { departmentSchema, viewerDepartmentsSchema } from "@/lib/schemas/department"
 import type { Department } from "@/lib/types"
 
@@ -38,9 +39,10 @@ export async function addDepartment(formData: FormData) {
     return redirect(`/settings?error=${encodeURIComponent(messages)}`)
   }
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("departments")
     .insert({ name: parsed.data.name.trim() })
+    .select().single()
 
   if (error) {
     if (error.code === "23505") {
@@ -48,6 +50,10 @@ export async function addDepartment(formData: FormData) {
     }
     return redirect(`/settings?error=${encodeURIComponent(error.message)}`)
   }
+
+  await logAudit("departments", data.id, "insert", [
+    { newValue: JSON.stringify({ name: parsed.data.name.trim() }) }
+  ], parsed.data.reason)
 
   revalidatePath("/settings")
   redirect("/settings")
@@ -65,6 +71,10 @@ export async function deleteDepartment(id: string) {
   if (error) {
     return redirect(`/settings?error=${encodeURIComponent(error.message)}`)
   }
+
+  await logAudit("departments", id, "delete", [
+    { field: "deleted", oldValue: id }
+  ], "Department deleted")
 
   revalidatePath("/settings")
   redirect("/settings")
@@ -127,6 +137,10 @@ export async function saveViewerDepartments(formData: FormData) {
       return redirect(`/settings?error=${encodeURIComponent(insertError.message)}`)
     }
   }
+
+  await logAudit("viewer_departments", viewer_id, "update", [
+    { newValue: JSON.stringify({ department_ids: department_ids }) }
+  ], parsed.data.reason)
 
   revalidatePath("/settings")
   redirect("/settings")

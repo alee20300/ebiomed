@@ -5,6 +5,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { pmScheduleSchema } from "@/lib/schemas/pm-schedule"
 import { getCurrentUser } from "@/lib/actions/profiles"
+import { logAudit } from "@/lib/actions/audit"
 import type { PMSchedule } from "@/lib/types"
 import { addDays } from "date-fns"
 
@@ -48,7 +49,7 @@ export async function createPMSchedule(formData: FormData) {
 
   const nextDue = addDays(new Date(), parsed.data.frequency_days).toISOString()
 
-  const { error } = await supabase.from("pm_schedules").insert({
+  const { data, error } = await supabase.from("pm_schedules").insert({
     equipment_id: parsed.data.equipment_id,
     frequency_days: parsed.data.frequency_days,
     description: parsed.data.description,
@@ -56,11 +57,15 @@ export async function createPMSchedule(formData: FormData) {
     assigned_to: parsed.data.assigned_to || null,
     active: parsed.data.active,
     next_due: nextDue,
-  })
+  }).select().single()
 
   if (error) {
     return redirect(`/pm-schedules/new?error=${encodeURIComponent(error.message)}`)
   }
+
+  await logAudit("pm_schedules", data.id, "insert", [
+    { newValue: JSON.stringify({ equipment_id: parsed.data.equipment_id, frequency_days: parsed.data.frequency_days, description: parsed.data.description, next_due: nextDue }) }
+  ], parsed.data.reason)
 
   revalidatePath("/pm-schedules")
   revalidatePath("/dashboard")
@@ -122,6 +127,10 @@ export async function startPMTask(pmScheduleId: string) {
     return redirect(`/pm-schedules?error=${encodeURIComponent(error.message)}`)
   }
 
+  await logAudit("work_orders", wo.id, "insert", [
+    { newValue: JSON.stringify({ equipment_id: pm.equipment_id, type: "preventive", description: pm.description, assigned_to: pm.assigned_to || user.id }) }
+  ], "Started from PM schedule " + pmScheduleId)
+
   revalidatePath("/work-orders")
   revalidatePath("/pm-schedules")
   redirect(`/work-orders/${wo.id}`)
@@ -146,6 +155,11 @@ export async function completePMTask(workOrderId: string, pmScheduleId: string) 
     .from("pm_schedules")
     .update({ last_completed: now, next_due: next })
     .eq("id", pmScheduleId)
+
+  await logAudit("pm_schedules", pmScheduleId, "update", [
+    { field: "last_completed", newValue: now },
+    { field: "next_due", newValue: next }
+  ], "PM task completed")
 
   revalidatePath("/pm-schedules")
   revalidatePath("/dashboard")

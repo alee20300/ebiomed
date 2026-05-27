@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
+import { logAudit } from "@/lib/actions/audit"
 import { faultReportSchema } from "@/lib/schemas/fault-report"
 
 export async function submitFaultReport(formData: FormData) {
@@ -60,12 +61,29 @@ export async function submitFaultReport(formData: FormData) {
     .update({ issue_photo_url: urlData.publicUrl })
     .eq("id", wo.id)
 
+  const reason = "Fault reported by " + (parsed.data.reported_by_name || "staff")
+  await logAudit("work_orders", wo.id, "insert", [
+    { newValue: JSON.stringify({ equipment_id: parsed.data.equipment_id, description: parsed.data.description, reported_by_name: parsed.data.reported_by_name, reported_by_department: parsed.data.reported_by_department, issue_photo_url: urlData.publicUrl }) }
+  ], reason)
+
+  // Fetch equipment status before update
+  const { data: equip } = await supabase
+    .schema("ebiomed")
+    .from("equipment")
+    .select("status")
+    .eq("id", wo.equipment_id)
+    .single()
+
   // Set equipment to under_repair
   await supabase
     .schema("ebiomed")
     .from("equipment")
     .update({ status: "under_repair", updated_at: new Date().toISOString() })
     .eq("id", wo.equipment_id)
+
+  await logAudit("equipment", wo.equipment_id, "update", [
+    { field: "status", oldValue: equip?.status || "unknown", newValue: "under_repair" }
+  ], reason)
 
   revalidatePath("/dashboard")
   revalidatePath("/work-orders")

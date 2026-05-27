@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
+import { logAudit } from "@/lib/actions/audit"
 
 export async function login(formData: FormData) {
   const supabase = await createClient()
@@ -40,6 +41,10 @@ export async function signup(formData: FormData) {
       full_name: fullName,
       role,
     })
+
+    await logAudit("profiles", data.user.id, "insert", [
+      { newValue: JSON.stringify({ full_name: fullName, role }) }
+    ], "User account created via signup")
   }
 
   redirect("/login?message=Check your email to confirm your account")

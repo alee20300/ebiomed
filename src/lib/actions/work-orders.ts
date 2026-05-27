@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server"
 import { workOrderSchema, workOrderUpdateSchema } from "@/lib/schemas/work-order"
 import { getCurrentUser } from "@/lib/actions/profiles"
 import { getViewerDepartmentIds } from "@/lib/actions/departments"
+import { logAudit } from "@/lib/actions/audit"
 import type { WorkOrder } from "@/lib/types"
 
 export async function createWorkOrder(formData: FormData) {
@@ -33,15 +34,19 @@ export async function createWorkOrder(formData: FormData) {
     return redirect(`/work-orders/new?error=${encodeURIComponent("Cannot create work order for retired equipment")}`)
   }
 
-  const { error } = await supabase.from("work_orders").insert({
+  const { data, error } = await supabase.from("work_orders").insert({
     ...parsed.data,
     assigned_to: parsed.data.assigned_to || null,
     created_by: user.id,
-  })
+  }).select().single()
 
   if (error) {
     return redirect(`/work-orders/new?error=${encodeURIComponent(error.message)}`)
   }
+
+  await logAudit("work_orders", data.id, "insert", [
+    { newValue: JSON.stringify({ equipment_id: parsed.data.equipment_id, type: parsed.data.type, priority: parsed.data.priority, description: parsed.data.description, assigned_to: parsed.data.assigned_to }) }
+  ], parsed.data.reason)
 
   revalidatePath("/work-orders")
   revalidatePath("/dashboard")
@@ -175,6 +180,11 @@ export async function updateWorkOrderStatus(id: string, formData: FormData) {
     return redirect(`/work-orders/${id}?error=${encodeURIComponent(error.message)}`)
   }
 
+  const statusReason = parsed.data.reason || "Status change"
+  await logAudit("work_orders", id, "update", [
+    { field: "status", oldValue: current.status, newValue: newStatus }
+  ], statusReason)
+
   // If completed, update equipment status back to active
   if (parsed.data.status === "completed") {
     const { data: wo } = await supabase
@@ -184,10 +194,20 @@ export async function updateWorkOrderStatus(id: string, formData: FormData) {
       .single()
 
     if (wo) {
+      const { data: equip } = await supabase
+        .from("equipment")
+        .select("status")
+        .eq("id", wo.equipment_id)
+        .single()
+
       await supabase
         .from("equipment")
         .update({ status: "active", updated_at: new Date().toISOString() })
         .eq("id", wo.equipment_id)
+
+      await logAudit("equipment", wo.equipment_id, "update", [
+        { field: "status", oldValue: equip?.status || "unknown", newValue: "active" }
+      ], statusReason)
     }
   }
 
@@ -204,6 +224,10 @@ export async function updateWorkOrderStatus(id: string, formData: FormData) {
         .from("equipment")
         .update({ status: "under_repair", updated_at: new Date().toISOString() })
         .eq("id", wo.equipment_id)
+
+      await logAudit("equipment", wo.equipment_id, "update", [
+        { field: "status", oldValue: "active", newValue: "under_repair" }
+      ], statusReason)
     }
   }
 

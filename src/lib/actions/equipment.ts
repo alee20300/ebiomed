@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { equipmentSchema } from "@/lib/schemas/equipment"
+import { logAudit } from "@/lib/actions/audit"
 import type { Equipment } from "@/lib/types"
 
 export async function createEquipment(formData: FormData) {
@@ -16,11 +17,15 @@ export async function createEquipment(formData: FormData) {
     return redirect(`/equipment/new?error=${encodeURIComponent(messages)}`)
   }
 
-  const { error } = await supabase.from("equipment").insert(parsed.data)
+  const { data, error } = await supabase.from("equipment").insert(parsed.data).select().single()
 
   if (error) {
     return redirect(`/equipment/new?error=${encodeURIComponent(error.message)}`)
   }
+
+  await logAudit("equipment", data.id, "insert", [
+    { newValue: JSON.stringify(parsed.data) }
+  ], parsed.data.reason)
 
   revalidatePath("/equipment")
   redirect("/equipment")
@@ -44,6 +49,10 @@ export async function updateEquipment(id: string, formData: FormData) {
   if (error) {
     return redirect(`/equipment/${id}?error=${encodeURIComponent(error.message)}`)
   }
+
+  await logAudit("equipment", id, "update", [
+    { newValue: JSON.stringify(parsed.data) }
+  ], parsed.data.reason || "Equipment updated")
 
   revalidatePath("/equipment")
   revalidatePath(`/equipment/${id}`)

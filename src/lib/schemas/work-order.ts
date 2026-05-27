@@ -10,6 +10,7 @@ export const workOrderSchema = z.object({
   priority: woPriorityEnum.default("medium"),
   description: z.string().min(1, "Description is required"),
   assigned_to: z.string().uuid().optional(),
+  reason: z.string().min(5, "Reason for change is required").max(500, "Reason too long"),
 })
 
 export const workOrderUpdateSchema = z.object({
@@ -17,6 +18,7 @@ export const workOrderUpdateSchema = z.object({
   assigned_to: z.string().uuid().optional(),
   priority: woPriorityEnum.optional(),
   resolution_notes: z.string().optional(),
+  reason: z.string().min(5, "Reason for change is required").max(500, "Reason too long"),
 })
 
 export type WorkOrderFormData = z.infer<typeof workOrderSchema>

@@ -26,6 +26,7 @@ export const pmScheduleSchema = z.object({
     if (typeof val === "boolean") return val
     return val === "true"
   }).default(true),
+  reason: z.string().min(5, "Reason for change is required").max(500, "Reason too long"),
 })
 
 export type PMScheduleFormData = z.infer<typeof pmScheduleSchema>
