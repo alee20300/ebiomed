@@ -20,9 +20,23 @@ psql $DB_URL < supabase/migrations/0005_rls_policies.sql
 psql $DB_URL < supabase/migrations/0006_departments.sql
 psql $DB_URL < supabase/migrations/0006_end_user_checklists.sql
 
+# NEW: Phase 0-6 migrations (EMMS compliance)
+psql $DB_URL < supabase/migrations/0007_phase0_foundation_fixes.sql
+psql $DB_URL < supabase/migrations/0008_audit_log.sql
+psql $DB_URL < supabase/migrations/0009_signatures.sql
+psql $DB_URL < supabase/migrations/0010_calibration.sql
+psql $DB_URL < supabase/migrations/0011_certificates.sql
+psql $DB_URL < supabase/migrations/0012_asset_hierarchy.sql
+psql $DB_URL < supabase/migrations/0013_integration.sql
+
 # Seed data (optional)
 psql $DB_URL < supabase/seed.sql
 ```
+
+> **Note:** If port 5432 is firewalled, run the above commands directly on the server hosting Supabase. The Docker psql command can also be used:
+> ```bash
+> docker exec -i supabase_db_eBiomed psql -U postgres < supabase/migrations/000X_filename.sql
+> ```
 
 ## GitHub Secrets
 
