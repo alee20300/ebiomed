@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
+import { getCurrentUser } from "@/lib/actions/profiles"
+import { getViewerDepartmentIds } from "@/lib/actions/departments"
 import { logAudit } from "@/lib/actions/audit"
 import { recordSignature } from "@/lib/actions/signatures"
 import type { WorkOrder } from "@/lib/types"
