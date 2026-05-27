@@ -4,6 +4,7 @@ import { StatsCards } from "@/components/dashboard/stats-cards"
 import { ActivityFeed } from "@/components/dashboard/activity-feed"
 import { OverduePMAlert } from "@/components/dashboard/overdue-pm-alert"
 import { LowStockAlert } from "@/components/dashboard/low-stock-alert"
+import { CertificateExpiryAlert } from "@/components/dashboard/certificate-expiry-alert"
 import { EquipmentSearch } from "@/components/dashboard/equipment-search"
 import { Skeleton } from "@/components/ui/skeleton"
 import { isPast } from "date-fns"
@@ -65,6 +66,7 @@ async function DashboardContent() {
         <OverduePMAlert schedules={pmSchedules || []} />
         <LowStockAlert parts={filteredLowParts || []} />
       </div>
+      <CertificateExpiryAlert />
       <ActivityFeed workOrders={recentWOs || []} />
     </div>
   )
