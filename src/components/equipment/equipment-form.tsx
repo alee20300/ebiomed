@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { ReasonForChange } from "@/components/shared/reason-for-change"
 import { AlertCircle } from "lucide-react"
 import type { Equipment } from "@/lib/types"
 
