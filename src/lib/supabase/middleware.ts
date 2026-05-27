@@ -25,10 +25,6 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
   const url = request.nextUrl
   const isAuthRoute = url.pathname.startsWith("/login") || url.pathname.startsWith("/auth")
   const isPublicRoute = url.pathname.startsWith("/report") || url.pathname.startsWith("/checklist") || url.pathname === "/api/health"
@@ -41,6 +37,10 @@ export async function updateSession(request: NextRequest) {
   if (isPublicRoute) {
     return supabaseResponse
   }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   if (!user && !isAuthRoute) {
     const loginUrl = new URL("/login", request.url)
