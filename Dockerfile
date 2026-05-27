@@ -61,4 +61,4 @@ ENV HOSTNAME="0.0.0.0"
 CMD ["node", "server.js"]
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s \
-  CMD wget -qO- http://127.0.0.1:3000/api/health >/dev/null 2>&1 || exit 1
+  CMD wget -qO- http://127.0.0.1:${PORT:-3000}/api/health >/dev/null 2>&1 || exit 1
