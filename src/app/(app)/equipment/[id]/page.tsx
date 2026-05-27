@@ -5,6 +5,8 @@ import { getEquipmentById } from "@/lib/actions/equipment"
 import { EquipmentInfoTab } from "@/components/equipment/equipment-info-tab"
 import { EquipmentHistoryTab } from "@/components/equipment/equipment-history-tab"
 import { EquipmentPMTab } from "@/components/equipment/equipment-pm-tab"
+import { EquipmentCalibrationTab } from "@/components/calibration/equipment-calibration-tab"
+import { CalibrationExecution } from "@/components/calibration/calibration-execution"
 import { ChecklistHistory } from "@/components/checklist/checklist-history"
 import { QRCodeDisplay } from "@/components/report/qrcode-display"
 import { PrintLabelButton } from "@/components/report/print-label-button"
@@ -14,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { StatusBadge } from "@/components/shared/status-badge"
-import { ChevronLeft, ClipboardCheck } from "lucide-react"
+import { ChevronLeft, ClipboardCheck, Gauge } from "lucide-react"
 
 export default async function EquipmentDetailPage({
   params,
@@ -48,6 +50,10 @@ export default async function EquipmentDetailPage({
           <TabsTrigger value="info">Information</TabsTrigger>
           <TabsTrigger value="history">Work History</TabsTrigger>
           <TabsTrigger value="pm">PM Schedules</TabsTrigger>
+          <TabsTrigger value="calibration">
+            <Gauge className="mr-1 h-4 w-4" />
+            Calibration
+          </TabsTrigger>
           <TabsTrigger value="checklist">
             <ClipboardCheck className="mr-1 h-4 w-4" />
             Checklist
@@ -65,6 +71,21 @@ export default async function EquipmentDetailPage({
           <Suspense fallback={<Skeleton className="h-32 w-full" />}>
             <EquipmentPMTab equipmentId={id} />
           </Suspense>
+        </TabsContent>
+        <TabsContent value="calibration" className="space-y-6">
+          <div className="rounded-lg border bg-white p-6">
+            <EquipmentCalibrationTab
+              equipmentId={id}
+              calibrationIntervalDays={equipment.calibration_interval_days}
+              calibrationParams={equipment.calibration_parameters}
+            />
+          </div>
+          <CalibrationExecution
+            equipmentId={id}
+            equipmentName={equipment.name}
+            equipmentTag={equipment.tag_number}
+            calibrationParams={equipment.calibration_parameters}
+          />
         </TabsContent>
         <TabsContent value="checklist" className="rounded-lg border bg-white p-6">
           <Suspense fallback={<Skeleton className="h-32 w-full" />}>

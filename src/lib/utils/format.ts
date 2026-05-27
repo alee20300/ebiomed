@@ -35,6 +35,8 @@ export function statusColor(status: string): string {
     case "inactive": return "bg-gray-100 text-gray-800"
     case "retired": return "bg-red-100 text-red-800"
     case "under_repair": return "bg-purple-100 text-purple-800"
+    case "out_of_tolerance": return "bg-red-100 text-red-800"
+    case "certified": return "bg-emerald-100 text-emerald-800"
     default: return "bg-gray-100 text-gray-800"
   }
 }

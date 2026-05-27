@@ -7,12 +7,16 @@ export interface Equipment {
   manufacturer: string | null
   department: string | null
   location: string | null
-  status: "active" | "inactive" | "retired" | "under_repair"
+  status: "active" | "inactive" | "retired" | "under_repair" | "out_of_tolerance" | "certified"
   category: string | null
   install_date: string | null
   warranty_expiry: string | null
   photo_url: string | null
   notes: string | null
+  calibration_interval_days: number | null
+  calibration_parameters: CalibrationParameter[] | null
+  last_calibrated: string | null
+  next_calibration_due: string | null
   created_at: string
   updated_at: string
   deleted_at: string | null
@@ -172,4 +176,64 @@ export interface Signature {
   signed_at: string
   signature_hash: string | null
   signer?: Profile | null
+}
+
+export interface ReferenceStandard {
+  id: string
+  serial_number: string
+  name: string
+  manufacturer: string | null
+  model: string | null
+  certificate_number: string | null
+  certificate_expiry: string
+  calibration_interval_days: number
+  location: string | null
+  notes: string | null
+  status: "active" | "expired" | "retired"
+  created_at: string
+  updated_at: string
+  deleted_at: string | null
+}
+
+export interface CalibrationReading {
+  id: string
+  equipment_id: string
+  reference_standard_id: string | null
+  parameter: string
+  measured_value: number
+  expected_value: number
+  tolerance_min: number
+  tolerance_max: number
+  unit: string | null
+  passed: boolean
+  notes: string | null
+  work_order_id: string | null
+  recorded_at: string
+  recorded_by: string
+  reference_standard?: ReferenceStandard | null
+  profile?: Profile | null
+}
+
+export interface EnvironmentalReading {
+  id: string
+  equipment_id: string | null
+  calibration_reading_id: string | null
+  temperature_celsius: number | null
+  humidity_percent: number | null
+  recorded_at: string
+  recorded_by: string
+}
+
+export interface CalibrationParameter {
+  parameter: string
+  unit: string
+  expected_value: number
+  tolerance_min: number
+  tolerance_max: number
+}
+
+export interface ToleranceResult {
+  passed: boolean
+  deviation: number
+  deviationPercent: number
 }

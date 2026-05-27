@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-export const equipmentStatusEnum = z.enum(["active", "inactive", "retired", "under_repair"])
+export const equipmentStatusEnum = z.enum(["active", "inactive", "retired", "under_repair", "out_of_tolerance", "certified"])
 
 export const equipmentSchema = z.object({
   tag_number: z.string().min(1, "Tag number is required"),
