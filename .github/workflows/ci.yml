@@ -96,7 +96,19 @@ jobs:
             echo "PREFIX=DEV" >> $GITHUB_OUTPUT
           fi
 
-      - name: Extract metadata
+      - name: Extract metadata (production)
+        if: github.ref_name == 'production'
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,prefix=prod-,suffix=,format=short
+            type=raw,value=production
+            type=raw,value=latest
+
+      - name: Extract metadata (main)
+        if: github.ref_name != 'production'
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -105,18 +117,12 @@ jobs:
             type=sha,prefix=,suffix=,format=short
             type=ref,event=branch
 
-      - name: Add latest tag for production
-        if: github.ref_name == 'production'
-        id: meta_prod
-        run: |
-          echo "tags=${{ steps.meta.outputs.tags }},${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_OUTPUT
-
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: ${{ steps.meta_prod.outputs.tags || steps.meta.outputs.tags }}
+          tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
