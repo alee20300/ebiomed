@@ -15,6 +15,7 @@ export interface Equipment {
   notes: string | null
   created_at: string
   updated_at: string
+  deleted_at: string | null
 }
 
 export interface WorkOrder {
@@ -27,10 +28,12 @@ export interface WorkOrder {
   assigned_to: string | null
   created_by: string
   created_at: string
+  updated_at: string
   started_at: string | null
   completed_at: string | null
   resolution_notes: string | null
   downtime_minutes: number | null
+  deleted_at: string | null
   equipment?: Equipment
   assigned_profile?: Profile | null
   created_profile?: Profile | null
@@ -47,6 +50,8 @@ export interface PMSchedule {
   assigned_to: string | null
   active: boolean
   created_at: string
+  updated_at: string
+  deleted_at: string | null
   equipment?: Equipment
 }
 
@@ -71,6 +76,7 @@ export interface Part {
   location: string | null
   created_at: string
   updated_at: string
+  deleted_at: string | null
 }
 
 export interface PartsUsage {
@@ -80,6 +86,7 @@ export interface PartsUsage {
   quantity_used: number
   used_by: string
   used_at: string
+  updated_at: string
   part?: Part
 }
 
@@ -90,6 +97,7 @@ export interface Profile {
   department: string | null
   phone: string | null
   created_at: string
+  updated_at: string
 }
 
 export interface WoComment {
@@ -98,6 +106,7 @@ export interface WoComment {
   author_id: string
   text: string
   created_at: string
+  updated_at: string
   author?: { full_name: string; role: string } | null
 }
 
@@ -109,6 +118,7 @@ export interface ChecklistTemplate {
   active: boolean
   frequency: string
   created_at: string
+  updated_at: string
 }
 
 export interface ChecklistSubmission {
@@ -121,6 +131,7 @@ export interface ChecklistSubmission {
   submitted_by_department: string | null
   work_order_id: string | null
   created_at: string
+  updated_at: string
   equipment?: Equipment
   template?: ChecklistTemplate
 }
@@ -129,9 +140,11 @@ export interface Department {
   id: string
   name: string
   created_at: string
+  updated_at: string
 }
 
 export interface ViewerDepartment {
   viewer_id: string
   department_id: string
+  updated_at: string
 }
