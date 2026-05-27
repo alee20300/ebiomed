@@ -7,6 +7,7 @@ import { EquipmentHistoryTab } from "@/components/equipment/equipment-history-ta
 import { EquipmentPMTab } from "@/components/equipment/equipment-pm-tab"
 import { EquipmentCalibrationTab } from "@/components/calibration/equipment-calibration-tab"
 import { CalibrationExecution } from "@/components/calibration/calibration-execution"
+import { EquipmentCertificatesTab } from "@/components/calibration/equipment-certificates-tab"
 import { ChecklistHistory } from "@/components/checklist/checklist-history"
 import { QRCodeDisplay } from "@/components/report/qrcode-display"
 import { PrintLabelButton } from "@/components/report/print-label-button"
@@ -16,7 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
 import { StatusBadge } from "@/components/shared/status-badge"
-import { ChevronLeft, ClipboardCheck, Gauge } from "lucide-react"
+import { ChevronLeft, ClipboardCheck, Gauge, FileText } from "lucide-react"
 
 export default async function EquipmentDetailPage({
   params,
@@ -54,6 +55,10 @@ export default async function EquipmentDetailPage({
             <Gauge className="mr-1 h-4 w-4" />
             Calibration
           </TabsTrigger>
+          <TabsTrigger value="certificates">
+            <FileText className="mr-1 h-4 w-4" />
+            Certificates
+          </TabsTrigger>
           <TabsTrigger value="checklist">
             <ClipboardCheck className="mr-1 h-4 w-4" />
             Checklist
@@ -90,6 +95,11 @@ export default async function EquipmentDetailPage({
         <TabsContent value="checklist" className="rounded-lg border bg-white p-6">
           <Suspense fallback={<Skeleton className="h-32 w-full" />}>
             <ChecklistHistory equipmentId={id} />
+          </Suspense>
+        </TabsContent>
+        <TabsContent value="certificates" className="rounded-lg border bg-white p-6">
+          <Suspense fallback={<Skeleton className="h-32 w-full" />}>
+            <EquipmentCertificatesTab equipmentId={id} />
           </Suspense>
         </TabsContent>
       </Tabs>

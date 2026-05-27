@@ -237,3 +237,18 @@ export interface ToleranceResult {
   deviation: number
   deviationPercent: number
 }
+
+export interface Certificate {
+  id: string
+  equipment_id: string
+  certificate_number: string
+  calibration_work_order_id: string | null
+  audit_trail_hash: string
+  pdf_url: string | null
+  issued_by: string
+  issued_at: string
+  valid_until: string
+  status: "valid" | "expired" | "revoked"
+  equipment?: Equipment | null
+  issuer?: Profile | null
+}

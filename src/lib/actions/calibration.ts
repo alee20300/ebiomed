@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server"
 import { getCurrentUser } from "@/lib/actions/profiles"
 import { logAudit } from "@/lib/actions/audit"
 import { recordSignature } from "@/lib/actions/signatures"
+import { generateCertificate } from "@/lib/actions/certificates"
 import { referenceStandardSchema, calibrationBatchSchema } from "@/lib/schemas/calibration"
 import type { ReferenceStandard, CalibrationReading } from "@/lib/types"
 
@@ -252,6 +253,11 @@ export async function submitCalibrationBatch(formData: FormData) {
 
   // Record signature
   await recordSignature("calibration", parsed.data.equipment_id, "Calibrated")
+
+  // Auto-generate certificate if all readings passed
+  if (!hasFailedReadings) {
+    await generateCertificate(parsed.data.equipment_id, null)
+  }
 
   revalidatePath("/equipment")
   revalidatePath(`/equipment/${parsed.data.equipment_id}`)
