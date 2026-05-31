@@ -21,29 +21,27 @@ export async function submitFaultReport(formData: FormData) {
     return redirect(`/report?tag=${raw.equipment_tag || ""}&error=${encodeURIComponent("Photo is required")}`)
   }
 
-  // Create work order first to get an ID for the photo path
-  const { data: wo, error: woError } = await supabase
+  // Create complaint
+  const { data: complaint, error: complaintError } = await supabase
     .schema("ebiomed")
-    .from("work_orders")
+    .from("complaints")
     .insert({
       equipment_id: parsed.data.equipment_id,
-      type: "corrective",
-      priority: "medium",
-      status: "open",
       description: parsed.data.description,
       reported_by_name: parsed.data.reported_by_name || null,
       reported_by_department: parsed.data.reported_by_department || null,
+      status: "pending_review",
     })
     .select("id, equipment_id")
     .single()
 
-  if (woError || !wo) {
-    return redirect(`/report?tag=${raw.equipment_tag || ""}&error=${encodeURIComponent(woError?.message || "Failed to create work order")}`)
+  if (complaintError || !complaint) {
+    return redirect(`/report?tag=${raw.equipment_tag || ""}&error=${encodeURIComponent(complaintError?.message || "Failed to submit complaint")}`)
   }
 
-  // Upload photo to storage
+  // Upload photo to storage (keyed by complaint ID)
   const ext = photo.name.split(".").pop() || "jpg"
-  const photoPath = `${wo.id}.${ext}`
+  const photoPath = `${complaint.id}.${ext}`
   const { error: uploadError } = await supabase.storage
     .from("fault-photos")
     .upload(photoPath, photo, { contentType: photo.type, upsert: true })
@@ -54,39 +52,19 @@ export async function submitFaultReport(formData: FormData) {
 
   const { data: urlData } = supabase.storage.from("fault-photos").getPublicUrl(photoPath)
 
-  // Update WO with photo URL
+  // Update complaint with photo URL
   await supabase
     .schema("ebiomed")
-    .from("work_orders")
-    .update({ issue_photo_url: urlData.publicUrl })
-    .eq("id", wo.id)
+    .from("complaints")
+    .update({ photo_url: urlData.publicUrl })
+    .eq("id", complaint.id)
 
   const reason = "Fault reported by " + (parsed.data.reported_by_name || "staff")
-  await logAudit("work_orders", wo.id, "insert", [
-    { newValue: JSON.stringify({ equipment_id: parsed.data.equipment_id, description: parsed.data.description, reported_by_name: parsed.data.reported_by_name, reported_by_department: parsed.data.reported_by_department, issue_photo_url: urlData.publicUrl }) }
-  ], reason)
-
-  // Fetch equipment status before update
-  const { data: equip } = await supabase
-    .schema("ebiomed")
-    .from("equipment")
-    .select("status")
-    .eq("id", wo.equipment_id)
-    .single()
-
-  // Set equipment to under_repair
-  await supabase
-    .schema("ebiomed")
-    .from("equipment")
-    .update({ status: "under_repair", updated_at: new Date().toISOString() })
-    .eq("id", wo.equipment_id)
-
-  await logAudit("equipment", wo.equipment_id, "update", [
-    { field: "status", oldValue: equip?.status || "unknown", newValue: "under_repair" }
+  await logAudit("complaints", complaint.id, "insert", [
+    { newValue: JSON.stringify({ equipment_id: parsed.data.equipment_id, description: parsed.data.description, reported_by_name: parsed.data.reported_by_name, reported_by_department: parsed.data.reported_by_department, photo_url: urlData.publicUrl }) }
   ], reason)
 
   revalidatePath("/dashboard")
-  revalidatePath("/work-orders")
-  revalidatePath(`/equipment/${wo.equipment_id}`)
-  redirect(`/report/success?wo=${wo.id}`)
+  revalidatePath("/complaints")
+  redirect(`/report/success?complaint=${complaint.id}`)
 }
