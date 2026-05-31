@@ -25,6 +25,8 @@ import { UserPlus, Trash2, Settings2, Users, Building2, ClipboardCheck, Wrench }
 import { signup } from "@/lib/actions/profiles"
 import { ViewerDepartmentsDialog } from "@/components/settings/viewer-departments-dialog"
 import { ChecklistTemplatesTab } from "@/components/settings/checklist-templates-tab"
+import { getAppSetting } from "@/lib/actions/settings"
+import { ExpenseToggle } from "@/components/settings/expense-toggle"
 import type { Profile, Equipment } from "@/lib/types"
 import { StatusBadge } from "@/components/shared/status-badge"
 import Link from "next/link"
@@ -297,6 +299,17 @@ async function EquipmentTab() {
   )
 }
 
+async function GeneralTab() {
+  const expenseTracking = await getAppSetting("expense_tracking_enabled")
+  const isEnabled = expenseTracking === true
+
+  return (
+    <div className="space-y-4">
+      <ExpenseToggle initialEnabled={isEnabled} />
+    </div>
+  )
+}
+
 export default async function SettingsPage() {
   const user = await getCurrentUser()
   if (user?.role === "viewer") redirect("/dashboard")
@@ -305,8 +318,12 @@ export default async function SettingsPage() {
     <div className="space-y-6">
       <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
 
-      <Tabs defaultValue="users" className="w-full">
+      <Tabs defaultValue="general" className="w-full">
         <TabsList>
+          <TabsTrigger value="general">
+            <Settings2 className="mr-1.5 h-4 w-4" />
+            General
+          </TabsTrigger>
           <TabsTrigger value="users">
             <Users className="mr-1.5 h-4 w-4" />
             Users
@@ -324,6 +341,12 @@ export default async function SettingsPage() {
             Equipment
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="general" className="rounded-lg border bg-white p-6">
+          <Suspense fallback={<Skeleton className="h-32 w-full" />}>
+            <GeneralTab />
+          </Suspense>
+        </TabsContent>
 
         <TabsContent value="users" className="rounded-lg border bg-white p-6">
           <Suspense fallback={<Skeleton className="h-64 w-full" />}>
