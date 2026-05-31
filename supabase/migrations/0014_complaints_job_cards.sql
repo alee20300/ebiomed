@@ -198,14 +198,17 @@ CREATE POLICY "Job card expenses manageable by admin or technician" ON ebiomed.j
     EXISTS (SELECT 1 FROM ebiomed.profiles WHERE id = auth.uid() AND role IN ('admin', 'technician'))
   );
 
--- app_settings (admin write, all read)
+-- RLS: app_settings (read all, write admin only)
 ALTER TABLE ebiomed.app_settings ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "App settings viewable by authenticated" ON ebiomed.app_settings;
-CREATE POLICY "App settings viewable by authenticated" ON ebiomed.app_settings
-  FOR SELECT USING (auth.role() = 'authenticated');
-
--- No INSERT/UPDATE policy via RLS — writes go through security definer or admin role
+DROP POLICY IF EXISTS "App settings readable by all" ON ebiomed.app_settings;
+CREATE POLICY "App settings readable by all" ON ebiomed.app_settings
+  FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "App settings writable by admin" ON ebiomed.app_settings;
+CREATE POLICY "App settings writable by admin" ON ebiomed.app_settings
+  FOR ALL USING (
+    auth.role() = 'authenticated' AND
+    EXISTS (SELECT 1 FROM ebiomed.profiles WHERE id = auth.uid() AND role = 'admin')
+  );
 
 -- ============================================================
 -- 11. Grant permissions
@@ -215,4 +218,4 @@ GRANT SELECT, INSERT, UPDATE ON ebiomed.job_cards TO authenticated;
 GRANT SELECT, INSERT ON ebiomed.job_card_entries TO authenticated;
 GRANT SELECT, INSERT ON ebiomed.job_card_parts TO authenticated;
 GRANT SELECT, INSERT ON ebiomed.job_card_expenses TO authenticated;
-GRANT SELECT, UPDATE ON ebiomed.app_settings TO authenticated;
+GRANT SELECT, INSERT, UPDATE ON ebiomed.app_settings TO authenticated;
