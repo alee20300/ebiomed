@@ -36,6 +36,7 @@ export interface WorkOrder {
   priority: "low" | "medium" | "high" | "critical"
   status: "open" | "in_progress" | "on_hold" | "completed" | "cancelled"
   description: string
+  complaint_id: string | null
   assigned_to: string | null
   created_by: string
   created_at: string
@@ -46,8 +47,80 @@ export interface WorkOrder {
   downtime_minutes: number | null
   deleted_at: string | null
   equipment?: Equipment
+  complaint?: Complaint | null
   assigned_profile?: Profile | null
   created_profile?: Profile | null
+}
+
+export type ComplaintStatus = "pending_review" | "approved" | "rejected"
+export type JobCardStatus = "in_progress" | "completed"
+export type ExpenseCategory = "food" | "ticket" | "accommodation"
+
+export interface Complaint {
+  id: string
+  equipment_id: string
+  description: string
+  photo_url: string | null
+  reported_by_name: string | null
+  reported_by_department: string | null
+  status: ComplaintStatus
+  reviewer_id: string | null
+  review_notes: string | null
+  created_at: string
+  updated_at: string
+  deleted_at: string | null
+  equipment?: Equipment
+  reviewer?: Profile | null
+}
+
+export interface JobCard {
+  id: string
+  work_order_id: string
+  technician_id: string
+  status: JobCardStatus
+  started_at: string
+  completed_at: string | null
+  summary: string | null
+  unresolved_issues: string | null
+  created_at: string
+  updated_at: string
+  technician?: Profile | null
+  entries?: JobCardEntry[]
+  parts?: JobCardPartUsage[]
+  expenses?: JobCardExpense[]
+}
+
+export interface JobCardEntry {
+  id: string
+  job_card_id: string
+  description: string
+  started_at: string
+  ended_at: string
+  duration_minutes: number
+}
+
+export interface JobCardPartUsage {
+  id: string
+  job_card_id: string
+  part_id: string
+  quantity_used: number
+  part?: Part | null
+}
+
+export interface JobCardExpense {
+  id: string
+  job_card_id: string
+  category: ExpenseCategory
+  amount: number
+  description: string
+  slip_url: string | null
+}
+
+export interface AppSetting {
+  key: string
+  value: any
+  updated_by: string | null
+  updated_at: string
 }
 
 export interface PMSchedule {
