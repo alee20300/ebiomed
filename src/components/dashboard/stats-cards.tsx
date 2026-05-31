@@ -1,11 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Wrench, AlertTriangle, CalendarCheck, Package } from "lucide-react"
+import { Wrench, AlertTriangle, CalendarCheck, Package, ClipboardList } from "lucide-react"
 
 interface Stats {
   machinesWithIssues: number
   openWorkOrders: number
   overduePMs: number
   lowStockParts: number
+  pendingComplaints: number
 }
 
 export function StatsCards({ stats }: { stats: Stats }) {
@@ -14,10 +15,11 @@ export function StatsCards({ stats }: { stats: Stats }) {
     { title: "Open Work Orders", value: stats.openWorkOrders, icon: AlertTriangle, color: "text-orange-600" },
     { title: "Overdue PMs", value: stats.overduePMs, icon: CalendarCheck, color: "text-red-600" },
     { title: "Low Stock Parts", value: stats.lowStockParts, icon: Package, color: "text-yellow-600" },
+    { title: "Pending Complaints", value: stats.pendingComplaints, icon: ClipboardList, color: "text-amber-600" },
   ]
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
       {cards.map((card) => (
         <Card key={card.title}>
           <CardHeader className="flex flex-row items-center justify-between pb-2">

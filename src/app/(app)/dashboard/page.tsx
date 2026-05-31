@@ -6,6 +6,7 @@ import { OverduePMAlert } from "@/components/dashboard/overdue-pm-alert"
 import { LowStockAlert } from "@/components/dashboard/low-stock-alert"
 import { CertificateExpiryAlert } from "@/components/dashboard/certificate-expiry-alert"
 import { EquipmentSearch } from "@/components/dashboard/equipment-search"
+import { getComplaints } from "@/lib/actions/complaints"
 import { Skeleton } from "@/components/ui/skeleton"
 import { isPast } from "date-fns"
 
@@ -28,6 +29,8 @@ async function DashboardContent() {
   const filteredLowParts = (allParts || []).filter(
     (p: { quantity_on_hand: number; min_threshold: number }) => p.quantity_on_hand <= p.min_threshold
   )
+
+  const complaints = await getComplaints()
 
   const overduePMs = (pmSchedules || []).filter(
     (pm: { next_due: string | null }) => pm.next_due && isPast(new Date(pm.next_due))
@@ -61,6 +64,7 @@ async function DashboardContent() {
         openWorkOrders: openWOCount || 0,
         overduePMs: overduePMs.length,
         lowStockParts: filteredLowParts?.length || 0,
+        pendingComplaints: complaints.length,
       }} />
       <div className="grid gap-6 lg:grid-cols-2">
         <OverduePMAlert schedules={pmSchedules || []} />
