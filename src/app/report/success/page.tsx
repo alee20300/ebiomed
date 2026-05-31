@@ -1,34 +1,38 @@
 import Link from "next/link"
-import { CheckCircle } from "lucide-react"
-import { buttonVariants } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 export default async function ReportSuccessPage({
   searchParams,
 }: {
-  searchParams: Promise<{ wo?: string }>
+  searchParams: Promise<{ complaint?: string }>
 }) {
-  const params = await searchParams
+  const { complaint } = await searchParams
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <Card className="w-full max-w-md text-center">
-        <CardHeader>
-          <CheckCircle className="mx-auto h-16 w-16 text-green-500" />
-          <CardTitle className="text-xl">Fault Report Submitted</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-gray-600">
-            A work order has been created and the biomedical team will be notified.
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">
+      <div className="max-w-md space-y-6 text-center">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+          <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold text-gray-900">Complaint Submitted</h1>
+          <p className="text-gray-600">
+            Your fault report has been submitted for review. The biomedical team will review it and create a work order if needed.
           </p>
-          {params.wo && (
-            <p className="font-mono text-sm text-gray-500">Work Order: {params.wo.slice(0, 8)}</p>
+          {complaint && (
+            <p className="text-sm text-gray-500">
+              Reference: {complaint.slice(0, 8)}
+            </p>
           )}
-          <div className="flex justify-center gap-3">
-            <Link href="/report" className={cn(buttonVariants({ variant: "outline" }))}>Report Another</Link>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+        <Link
+          href="/report"
+          className="inline-block text-sm font-medium text-blue-600 hover:text-blue-800"
+        >
+          Report Another Issue
+        </Link>
+      </div>
     </div>
   )
 }
