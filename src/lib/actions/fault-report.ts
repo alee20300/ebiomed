@@ -4,13 +4,17 @@ import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { logAudit } from "@/lib/actions/audit"
-import { faultReportSchema } from "@/lib/schemas/fault-report"
+import { getAppSetting } from "@/lib/actions/settings"
+import { faultReportSchema, faultReportWithCallLogSchema } from "@/lib/schemas/fault-report"
 
 export async function submitFaultReport(formData: FormData) {
   const supabase = await createClient()
   const raw = Object.fromEntries(formData)
 
-  const parsed = faultReportSchema.safeParse(raw)
+  const callLogEnabled = await getAppSetting("call_log_workflow_enabled")
+
+  const schema = callLogEnabled === true ? faultReportWithCallLogSchema : faultReportSchema
+  const parsed = schema.safeParse(raw)
   if (!parsed.success) {
     const messages = parsed.error.errors.map((e) => e.message).join(", ")
     return redirect(`/report?tag=${raw.equipment_tag || ""}&error=${encodeURIComponent(messages)}`)
@@ -21,17 +25,24 @@ export async function submitFaultReport(formData: FormData) {
     return redirect(`/report?tag=${raw.equipment_tag || ""}&error=${encodeURIComponent("Photo is required")}`)
   }
 
-  // Create complaint
+  const complaintData: Record<string, any> = {
+    equipment_id: parsed.data.equipment_id,
+    description: parsed.data.description,
+    reported_by_name: parsed.data.reported_by_name || null,
+    reported_by_department: parsed.data.reported_by_department || null,
+    status: "pending_review",
+  }
+
+  if (callLogEnabled === true && "call_status" in parsed.data) {
+    complaintData.called_department = parsed.data.called_department
+    complaintData.answered_by = parsed.data.answered_by || null
+    complaintData.call_status = (parsed.data as any).call_status
+  }
+
   const { data: complaint, error: complaintError } = await supabase
     .schema("ebiomed")
     .from("complaints")
-    .insert({
-      equipment_id: parsed.data.equipment_id,
-      description: parsed.data.description,
-      reported_by_name: parsed.data.reported_by_name || null,
-      reported_by_department: parsed.data.reported_by_department || null,
-      status: "pending_review",
-    })
+    .insert(complaintData)
     .select("id, equipment_id")
     .single()
 
@@ -39,7 +50,6 @@ export async function submitFaultReport(formData: FormData) {
     return redirect(`/report?tag=${raw.equipment_tag || ""}&error=${encodeURIComponent(complaintError?.message || "Failed to submit complaint")}`)
   }
 
-  // Upload photo to storage (keyed by complaint ID)
   const ext = photo.name.split(".").pop() || "jpg"
   const photoPath = `${complaint.id}.${ext}`
   const { error: uploadError } = await supabase.storage
@@ -52,7 +62,6 @@ export async function submitFaultReport(formData: FormData) {
 
   const { data: urlData } = supabase.storage.from("fault-photos").getPublicUrl(photoPath)
 
-  // Update complaint with photo URL
   await supabase
     .schema("ebiomed")
     .from("complaints")
