@@ -66,11 +66,24 @@ export interface Complaint {
   status: ComplaintStatus
   reviewer_id: string | null
   review_notes: string | null
+  called_department: boolean | null
+  answered_by: string | null
+  call_status: string | null
   created_at: string
   updated_at: string
   deleted_at: string | null
   equipment?: Equipment
   reviewer?: Profile | null
+  visits?: VisitLog[]
+}
+
+export interface VisitLog {
+  id: string
+  complaint_id: string
+  visited_by: string
+  visited_at: string
+  created_at: string
+  visited_profile?: Profile | null
 }
 
 export interface JobCard {
