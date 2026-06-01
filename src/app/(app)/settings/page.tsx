@@ -26,6 +26,7 @@ import { signup } from "@/lib/actions/profiles"
 import { ViewerDepartmentsDialog } from "@/components/settings/viewer-departments-dialog"
 import { ChecklistTemplatesTab } from "@/components/settings/checklist-templates-tab"
 import { getAppSetting } from "@/lib/actions/settings"
+import { CallLogToggle } from "@/components/settings/call-log-toggle"
 import { ExpenseToggle } from "@/components/settings/expense-toggle"
 import type { Profile, Equipment } from "@/lib/types"
 import { StatusBadge } from "@/components/shared/status-badge"
@@ -301,11 +302,15 @@ async function EquipmentTab() {
 
 async function GeneralTab() {
   const expenseTracking = await getAppSetting("expense_tracking_enabled")
-  const isEnabled = expenseTracking === true
+  const isExpenseEnabled = expenseTracking === true
+
+  const callLogWorkflow = await getAppSetting("call_log_workflow_enabled")
+  const isCallLogEnabled = callLogWorkflow === true
 
   return (
     <div className="space-y-4">
-      <ExpenseToggle initialEnabled={isEnabled} />
+      <ExpenseToggle initialEnabled={isExpenseEnabled} />
+      <CallLogToggle initialEnabled={isCallLogEnabled} />
     </div>
   )
 }
