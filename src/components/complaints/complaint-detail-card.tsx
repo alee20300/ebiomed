@@ -6,9 +6,18 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
 import { StatusBadge } from "@/components/shared/status-badge"
-import type { Complaint } from "@/lib/types"
+import type { Complaint, VisitLog } from "@/lib/types"
+import { Clock, Phone, PhoneOff } from "lucide-react"
 
-export function ComplaintDetailCard({ complaint }: { complaint: Complaint }) {
+export function ComplaintDetailCard({
+  complaint,
+  visits,
+  callLogEnabled,
+}: {
+  complaint: Complaint
+  visits: VisitLog[]
+  callLogEnabled: boolean
+}) {
   const [rejectOpen, setRejectOpen] = useState(false)
   const [submitting, setSubmitting] = useState(false)
 
@@ -69,6 +78,43 @@ export function ComplaintDetailCard({ complaint }: { complaint: Complaint }) {
           <p>{new Date(complaint.created_at).toLocaleString()}</p>
         </div>
       </div>
+
+      {callLogEnabled && complaint.call_status && (
+        <div className="rounded-lg border bg-gray-50 p-4">
+          <Label>Call Log</Label>
+          <div className="mt-2 flex items-center gap-2 text-sm">
+            {complaint.call_status === "answered" ? (
+              <>
+                <Phone className="h-4 w-4 text-green-600" />
+                <span>Answered by <strong>{complaint.answered_by || "Unknown"}</strong></span>
+              </>
+            ) : (
+              <>
+                <PhoneOff className="h-4 w-4 text-orange-600" />
+                <span>Call was not answered</span>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {callLogEnabled && visits.length > 0 && (
+        <div className="rounded-lg border bg-gray-50 p-4">
+          <Label>Site Visits</Label>
+          <div className="mt-2 space-y-2">
+            {visits.map((visit) => (
+              <div key={visit.id} className="flex items-center gap-2 text-sm">
+                <Clock className="h-4 w-4 text-blue-600" />
+                <span>
+                  {visit.visited_profile?.full_name || "Engineer"}
+                  {" — "}
+                  {new Date(visit.visited_at).toLocaleString()}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {isPending && (
         <div className="flex gap-3 border-t pt-4">
