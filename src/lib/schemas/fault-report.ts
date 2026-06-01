@@ -8,4 +8,11 @@ export const faultReportSchema = z.object({
   reason: z.string().min(5, "Reason for change is required").max(500, "Reason too long").default("Fault reported via public portal"),
 })
 
+export const faultReportWithCallLogSchema = faultReportSchema.extend({
+  called_department: z.coerce.boolean({ required_error: "Please indicate whether you called the department" }),
+  answered_by: z.string().optional(),
+  call_status: z.enum(["answered", "unanswered"]),
+})
+
 export type FaultReportFormData = z.infer<typeof faultReportSchema>
+export type FaultReportWithCallLogFormData = z.infer<typeof faultReportWithCallLogSchema>
