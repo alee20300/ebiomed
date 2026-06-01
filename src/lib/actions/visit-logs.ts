@@ -53,7 +53,6 @@ export async function logEngineerVisit(formData: FormData) {
 
   revalidatePath("/report")
   revalidatePath("/complaints")
-  return { success: true, visitedAt: visit.visited_at }
 }
 
 export async function getComplaintVisits(complaintId: string): Promise<VisitLog[]> {

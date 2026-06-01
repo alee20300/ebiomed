@@ -1,10 +1,15 @@
 import { Suspense } from "react"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
+import { getCurrentUser } from "@/lib/actions/profiles"
+import { getAppSetting } from "@/lib/actions/settings"
+import { getOpenComplaintsForEquipment } from "@/lib/actions/visit-logs"
+import { logEngineerVisit } from "@/lib/actions/visit-logs"
 import { BarcodeScanner } from "@/components/report/barcode-scanner"
 import { FaultForm } from "@/components/report/fault-form"
 import { Skeleton } from "@/components/ui/skeleton"
-import { AlertCircle, AlertTriangle, ClipboardCheck } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { AlertCircle, AlertTriangle, ClipboardCheck, Clock } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 
 interface PageProps {
@@ -13,6 +18,9 @@ interface PageProps {
 
 async function EquipmentChoice({ tag }: { tag: string }) {
   const supabase = await createClient()
+  const user = await getCurrentUser()
+  const callLogEnabled = (await getAppSetting("call_log_workflow_enabled")) === true
+
   const { data: equipment } = await supabase
     .schema("ebiomed")
     .from("equipment")
@@ -33,6 +41,11 @@ async function EquipmentChoice({ tag }: { tag: string }) {
   }
 
   const eq = equipment as any
+
+  let openComplaints: { id: string; created_at: string; description: string }[] = []
+  if (callLogEnabled && user && (user.role === "admin" || user.role === "technician")) {
+    openComplaints = await getOpenComplaintsForEquipment(eq.id)
+  }
 
   return (
     <div className="space-y-4">
@@ -69,12 +82,35 @@ async function EquipmentChoice({ tag }: { tag: string }) {
           </div>
         </div>
       </Link>
+
+      {openComplaints.length > 0 && (
+        <div className="space-y-3 rounded-lg border border-blue-200 bg-blue-50 p-4">
+          <p className="text-sm font-medium text-blue-800">Open Fault Reports</p>
+          {openComplaints.map((c) => (
+            <div key={c.id} className="flex items-center justify-between rounded-md bg-white p-3 shadow-sm">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm">{c.description}</p>
+                <p className="text-xs text-gray-500">Reported {new Date(c.created_at).toLocaleDateString()}</p>
+              </div>
+              <form action={logEngineerVisit}>
+                <input type="hidden" name="complaint_id" value={c.id} />
+                <Button type="submit" size="sm" variant="outline" className="ml-3 shrink-0">
+                  <Clock className="mr-1.5 h-4 w-4" />
+                  Log Visit
+                </Button>
+              </form>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
 
 async function EquipmentLookup({ tag }: { tag: string }) {
   const supabase = await createClient()
+  const callLogEnabled = (await getAppSetting("call_log_workflow_enabled")) === true
+
   const { data: equipment } = await supabase
     .schema("ebiomed")
     .from("equipment")
@@ -94,7 +130,7 @@ async function EquipmentLookup({ tag }: { tag: string }) {
     )
   }
 
-  return <FaultForm equipment={equipment as any} />
+  return <FaultForm equipment={equipment as any} callLogEnabled={callLogEnabled} />
 }
 
 export default async function ReportPage({ searchParams }: PageProps) {
