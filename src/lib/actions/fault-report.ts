@@ -5,7 +5,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { logAudit } from "@/lib/actions/audit"
 import { getAppSetting } from "@/lib/actions/settings"
-import { faultReportSchema, faultReportWithCallLogSchema } from "@/lib/schemas/fault-report"
+import { faultReportSchema, faultReportWithCallLogSchema, type FaultReportWithCallLogFormData } from "@/lib/schemas/fault-report"
 
 export async function submitFaultReport(formData: FormData) {
   const supabase = await createClient()
@@ -34,9 +34,10 @@ export async function submitFaultReport(formData: FormData) {
   }
 
   if (callLogEnabled === true && "call_status" in parsed.data) {
-    complaintData.called_department = parsed.data.called_department
-    complaintData.answered_by = parsed.data.answered_by || null
-    complaintData.call_status = (parsed.data as any).call_status
+    const callData = parsed.data as FaultReportWithCallLogFormData
+    complaintData.called_department = callData.called_department
+    complaintData.answered_by = callData.answered_by || null
+    complaintData.call_status = callData.call_status
   }
 
   const { data: complaint, error: complaintError } = await supabase

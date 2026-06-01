@@ -52,6 +52,7 @@ export async function logEngineerVisit(formData: FormData) {
   ], `Engineer visit logged for complaint ${parsed.data.complaint_id}`)
 
   revalidatePath("/report")
+  revalidatePath("/complaints")
   return { success: true, visitedAt: visit.visited_at }
 }
 
