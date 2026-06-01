@@ -9,7 +9,10 @@ export const faultReportSchema = z.object({
 })
 
 export const faultReportWithCallLogSchema = faultReportSchema.extend({
-  called_department: z.coerce.boolean({ required_error: "Please indicate whether you called the department" }),
+  called_department: z.union([z.boolean(), z.string()]).transform((val) => {
+    if (typeof val === "boolean") return val
+    return val === "true"
+  }, { required_error: "Please indicate whether you called the department" }),
   answered_by: z.string().optional(),
   call_status: z.enum(["answered", "unanswered"]),
 })
