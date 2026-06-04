@@ -1,5 +1,6 @@
 export const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", icon: "LayoutDashboard" },
+  { href: "/complaints", label: "Complaints", icon: "MessageSquareWarning" },
   { href: "/my-tasks", label: "My Tasks", icon: "ClipboardCheck" },
   { href: "/work-orders", label: "Work Orders", icon: "ClipboardList" },
   { href: "/pm-schedules", label: "PM Schedule", icon: "CalendarCheck" },

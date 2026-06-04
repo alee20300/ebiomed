@@ -6,11 +6,11 @@ import { cn } from "@/lib/utils"
 import { NAV_ITEMS } from "@/lib/utils/constants"
 import {
   LayoutDashboard, Wrench, ClipboardList, CalendarCheck,
-  Package, BarChart3, Settings, ClipboardCheck, FileSearch, Gauge
+  Package, BarChart3, Settings, ClipboardCheck, FileSearch, Gauge, MessageSquareWarning
 } from "lucide-react"
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  LayoutDashboard, Wrench, ClipboardList, CalendarCheck, Package, BarChart3, Settings, ClipboardCheck, FileSearch, Gauge,
+  LayoutDashboard, Wrench, ClipboardList, CalendarCheck, Package, BarChart3, Settings, ClipboardCheck, FileSearch, Gauge, MessageSquareWarning,
 }
 
 interface SidebarProps {

@@ -11,6 +11,7 @@ import type { Complaint } from "@/lib/types"
 export async function getComplaints(): Promise<Complaint[]> {
   const supabase = await createClient()
   const { data } = await supabase
+    .schema("ebiomed")
     .from("complaints")
     .select("*, equipment(*)")
     .eq("status", "pending_review")
@@ -23,6 +24,7 @@ export async function getComplaints(): Promise<Complaint[]> {
 export async function getComplaintById(id: string): Promise<Complaint | null> {
   const supabase = await createClient()
   const { data } = await supabase
+    .schema("ebiomed")
     .from("complaints")
     .select("*, equipment(*), reviewer:reviewer_id(*)")
     .eq("id", id)
@@ -38,6 +40,7 @@ export async function approveComplaint(id: string, reviewNotes?: string) {
   if (!user) return redirect("/login")
 
   const { data: complaint } = await supabase
+    .schema("ebiomed")
     .from("complaints")
     .select("*")
     .eq("id", id)
@@ -47,6 +50,7 @@ export async function approveComplaint(id: string, reviewNotes?: string) {
   if (complaint.status !== "pending_review") throw new Error("Complaint already reviewed")
 
   await supabase
+    .schema("ebiomed")
     .from("complaints")
     .update({
       status: "approved",
@@ -61,6 +65,7 @@ export async function approveComplaint(id: string, reviewNotes?: string) {
   ], reviewNotes || "Complaint approved")
 
   const { data: wo, error: woError } = await supabase
+    .schema("ebiomed")
     .from("work_orders")
     .insert({
       equipment_id: complaint.equipment_id,
@@ -84,12 +89,14 @@ export async function approveComplaint(id: string, reviewNotes?: string) {
   ], "Created from complaint approval")
 
   const { data: equip } = await supabase
+    .schema("ebiomed")
     .from("equipment")
     .select("status")
     .eq("id", complaint.equipment_id)
     .single()
 
   await supabase
+    .schema("ebiomed")
     .from("equipment")
     .update({ status: "under_repair", updated_at: new Date().toISOString() })
     .eq("id", complaint.equipment_id)
@@ -117,6 +124,7 @@ export async function rejectComplaint(id: string, formData: FormData) {
   }
 
   const { data: complaint } = await supabase
+    .schema("ebiomed")
     .from("complaints")
     .select("status")
     .eq("id", id)
@@ -126,6 +134,7 @@ export async function rejectComplaint(id: string, formData: FormData) {
   if (complaint.status !== "pending_review") throw new Error("Complaint already reviewed")
 
   await supabase
+    .schema("ebiomed")
     .from("complaints")
     .update({
       status: "rejected",
