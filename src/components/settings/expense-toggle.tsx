@@ -23,7 +23,7 @@ export function ExpenseToggle({ initialEnabled }: { initialEnabled: boolean }) {
     <div className="flex items-center justify-between rounded-lg border p-4">
       <div>
         <h4 className="font-medium">Expense Tracking</h4>
-        <p className="text-sm text-gray-500">Enable food, ticket, and accommodation expense tracking on job cards. Expenses are for back-office use only.</p>
+        <p className="text-sm text-muted-foreground">Enable food, ticket, and accommodation expense tracking on job cards. Expenses are for back-office use only.</p>
       </div>
       <button
         type="button"
@@ -32,7 +32,7 @@ export function ExpenseToggle({ initialEnabled }: { initialEnabled: boolean }) {
         disabled={saving}
         onClick={handleToggle}
         className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors ${
-          enabled ? "bg-blue-600" : "bg-gray-200"
+          enabled ? "bg-primary" : "bg-neutral-subtle"
         } ${saving ? "opacity-50" : ""}`}
       >
         <span

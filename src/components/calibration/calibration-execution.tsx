@@ -64,7 +64,7 @@ export function CalibrationExecution({
     setReauthOpen(true)
   }
 
-  const doSubmit = async () => {
+  const doSubmit = async (reauthPassword: string) => {
     setSubmitting(true)
     const formData = new FormData()
     formData.set("equipment_id", equipmentId)
@@ -83,6 +83,7 @@ export function CalibrationExecution({
     if (temperature) formData.set("temperature_celsius", temperature)
     if (humidity) formData.set("humidity_percent", humidity)
     formData.set("reason", reason)
+    formData.set("reauth_password", reauthPassword)
 
     await submitCalibrationBatch(formData)
     setSubmitting(false)
@@ -102,7 +103,7 @@ export function CalibrationExecution({
       <CardContent>
         {params.length === 0 ? (
           <div className="space-y-4">
-            <div className="flex items-center gap-2 rounded-md border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
+            <div className="flex items-center gap-2 rounded-md border border-warning bg-warning-subtle p-4 text-sm text-warning-strong">
               <AlertCircle className="h-4 w-4" />
               No calibration parameters configured. Please configure parameters in the Calibration tab first.
             </div>
@@ -142,7 +143,7 @@ export function CalibrationExecution({
             {/* Reference Standard */}
             <div className="w-full">
               <Label>Reference Standard *</Label>
-              <Select value={selectedStandard} onValueChange={setSelectedStandard}>
+              <Select value={selectedStandard} onValueChange={(value) => setSelectedStandard(value || "")}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a certified reference standard..." />
                 </SelectTrigger>

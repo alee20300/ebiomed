@@ -13,10 +13,12 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog"
 import { Plus, Trash2, Pencil, Check, X } from "lucide-react"
-import type { Equipment } from "@/lib/types"
-import type { ChecklistTemplate } from "@/lib/types"
+import type { ChecklistTemplate, Equipment } from "@/lib/types"
 
 type FieldType = "checkbox" | "number" | "combobox"
+type ChecklistTemplateWithEquipment = ChecklistTemplate & {
+  equipment?: Pick<Equipment, "name" | "tag_number"> | null
+}
 
 interface TaskDraft {
   id: string
@@ -70,9 +72,9 @@ export function ChecklistTemplatesTab({ initialTemplates }: Props) {
       tpl.items.map((item) => ({
         id: item.id,
         text: item.text,
-        type: (item as any).type || "checkbox",
-        required: (item as any).required ?? false,
-        options: (item as any).options || [],
+        type: item.type || "checkbox",
+        required: item.required ?? false,
+        options: item.options || [],
       }))
     )
     setDialogOpen(true)
@@ -87,7 +89,7 @@ export function ChecklistTemplatesTab({ initialTemplates }: Props) {
     setTasks(tasks.filter((t) => t.id !== id))
   }
 
-  const updateTask = (id: string, field: string, value: any) => {
+  const updateTask = <K extends keyof TaskDraft>(id: string, field: K, value: TaskDraft[K]) => {
     setTasks(tasks.map((t) => (t.id === id ? { ...t, [field]: value } : t)))
   }
 
@@ -107,13 +109,13 @@ export function ChecklistTemplatesTab({ initialTemplates }: Props) {
       .from("checklist_templates")
       .select("*, equipment:equipment_id(name, tag_number)")
       .order("created_at", { ascending: false })
-      .then(({ data }) => setTemplates((data || []) as any))
+      .then(({ data }) => setTemplates((data || []) as ChecklistTemplateWithEquipment[]))
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-muted-foreground">
           {templates.length} template{templates.length !== 1 ? "s" : ""} across all equipment
         </p>
         <Button size="sm" onClick={openNew}>
@@ -180,13 +182,13 @@ export function ChecklistTemplatesTab({ initialTemplates }: Props) {
             <div>
               <div className="mb-2 flex items-center justify-between">
                 <Label>Checklist Tasks</Label>
-                <button type="button" onClick={addTask} className="flex items-center gap-1 text-xs font-medium text-teal-600">
+                <button type="button" onClick={addTask} className="flex items-center gap-1 text-xs font-medium text-primary">
                   <Plus className="h-3 w-3" /> Add task
                 </button>
               </div>
               <div className="space-y-2">
                 {tasks.map((task) => (
-                  <div key={task.id} className="rounded-lg border bg-gray-50 p-2">
+                  <div key={task.id} className="rounded-lg border bg-muted p-2">
                     <div className="mb-1 flex items-center gap-2">
                       <Input
                         value={task.text}
@@ -196,7 +198,7 @@ export function ChecklistTemplatesTab({ initialTemplates }: Props) {
                       />
                       <select
                         value={task.type}
-                        onChange={(e) => updateTask(task.id, "type", e.target.value)}
+                        onChange={(e) => updateTask(task.id, "type", e.target.value as FieldType)}
                         className="h-8 w-24 rounded-lg border border-input bg-card px-2 text-xs"
                       >
                         <option value="checkbox">Checkbox</option>
@@ -207,7 +209,7 @@ export function ChecklistTemplatesTab({ initialTemplates }: Props) {
                         type="button"
                         onClick={() => updateTask(task.id, "required", !task.required)}
                         className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs ${
-                          task.required ? "bg-blue-50 text-blue-600" : "bg-gray-200 text-gray-400"
+                          task.required ? "bg-info-subtle text-primary" : "bg-neutral-subtle text-muted-foreground"
                         }`}
                       >
                         {task.required ? <Check className="h-3 w-3" /> : "−"}
@@ -215,14 +217,14 @@ export function ChecklistTemplatesTab({ initialTemplates }: Props) {
                       <button
                         type="button"
                         onClick={() => removeTask(task.id)}
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500"
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-danger-subtle hover:text-danger-strong"
                       >
                         <Trash2 className="h-3 w-3" />
                       </button>
                     </div>
                     {task.type === "combobox" && (
                       <div className="flex items-center gap-1">
-                        <span className="text-xs text-gray-400">Options:</span>
+                        <span className="text-xs text-muted-foreground">Options:</span>
                         <Input
                           value={(task.options || []).join(", ")}
                           onChange={(e) => updateTask(task.id, "options", e.target.value.split(",").map((s) => s.trim()).filter(Boolean))}
@@ -238,7 +240,7 @@ export function ChecklistTemplatesTab({ initialTemplates }: Props) {
 
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" size="sm" onClick={() => setDialogOpen(false)}>Cancel</Button>
-              <Button type="submit" size="sm" className="bg-teal-600 hover:bg-teal-700" disabled={!tmplName.trim() || !selEquipment}>
+              <Button type="submit" size="sm" className="bg-primary hover:bg-primary/90" disabled={!tmplName.trim() || !selEquipment}>
                 {editId ? "Update" : "Create"} Template
               </Button>
             </div>
@@ -247,7 +249,7 @@ export function ChecklistTemplatesTab({ initialTemplates }: Props) {
       </Dialog>
 
       {templates.length === 0 ? (
-        <p className="py-8 text-center text-sm text-gray-500">No checklist templates yet.</p>
+        <p className="py-8 text-center text-sm text-muted-foreground">No checklist templates yet.</p>
       ) : (
         <div className="rounded-lg border bg-white">
           <Table>
@@ -264,19 +266,19 @@ export function ChecklistTemplatesTab({ initialTemplates }: Props) {
               {templates.map((tpl) => (
                 <TableRow key={tpl.id}>
                   <TableCell className="text-sm">
-                    {(tpl as any).equipment?.name || "—"}<br />
-                    <span className="text-xs text-gray-400">{(tpl as any).equipment?.tag_number}</span>
+                    {(tpl as ChecklistTemplateWithEquipment).equipment?.name || "—"}<br />
+                    <span className="text-xs text-muted-foreground">{(tpl as ChecklistTemplateWithEquipment).equipment?.tag_number}</span>
                   </TableCell>
                   <TableCell className="font-medium text-sm">{tpl.name}</TableCell>
                   <TableCell className="text-sm capitalize">{tpl.frequency}</TableCell>
                   <TableCell className="text-sm">{tpl.items.length}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
-                      <button onClick={() => openEdit(tpl)} className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-primary">
+                      <button onClick={() => openEdit(tpl)} className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-primary">
                         <Pencil className="h-4 w-4" />
                       </button>
                       <form action={deleteChecklistTemplate.bind(null, tpl.id, tpl.equipment_id)}>
-                        <button type="submit" className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-500">
+                        <button type="submit" className="rounded p-1 text-muted-foreground hover:bg-danger-subtle hover:text-danger-strong">
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </form>

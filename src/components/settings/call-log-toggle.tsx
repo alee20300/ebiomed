@@ -13,7 +13,7 @@ export function CallLogToggle({ initialEnabled }: { initialEnabled: boolean }) {
     try {
       await updateAppSetting("call_log_workflow_enabled", newValue)
       setEnabled(newValue)
-    } catch (e) {
+    } catch {
       // Revert on error
     }
     setSaving(false)
@@ -23,8 +23,8 @@ export function CallLogToggle({ initialEnabled }: { initialEnabled: boolean }) {
     <div className="flex items-center justify-between rounded-lg border p-4">
       <div>
         <h4 className="font-medium">Call Log & Visit Tracking</h4>
-        <p className="text-sm text-gray-500">
-          Enable call-log fields on fault reports (who answered / unanswered) and engineer site-visit logging via QR/barcode scanning. Public fault reporters can record whether they called the biomed department and who answered.
+        <p className="text-sm text-muted-foreground">
+          Enable on-call engineer selection and informed / not-picked status on fault reports, plus engineer site-visit logging via QR/barcode scanning.
         </p>
       </div>
       <button
@@ -34,7 +34,7 @@ export function CallLogToggle({ initialEnabled }: { initialEnabled: boolean }) {
         disabled={saving}
         onClick={handleToggle}
         className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full transition-colors ${
-          enabled ? "bg-blue-600" : "bg-gray-200"
+          enabled ? "bg-primary" : "bg-neutral-subtle"
         } ${saving ? "opacity-50" : ""}`}
       >
         <span

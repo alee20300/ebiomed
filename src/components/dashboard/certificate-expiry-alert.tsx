@@ -2,7 +2,6 @@ import { getExpiringCertificates } from "@/lib/actions/certificates"
 import { format, parseISO, differenceInDays } from "date-fns"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { FileText, AlertTriangle } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -13,24 +12,24 @@ export async function CertificateExpiryAlert() {
   if (certs.length === 0) return null
 
   return (
-    <Card className="border-amber-200 bg-amber-50/50">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm flex items-center gap-2 text-amber-800">
+    <Card size="sm" className="border-warning bg-warning-subtle">
+      <CardHeader>
+        <CardTitle className="text-sm flex items-center gap-2 text-warning-strong">
           <AlertTriangle className="h-4 w-4" />
           Certificates Expiring Soon ({certs.length})
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="space-y-1.5">
         {certs.slice(0, 5).map((cert) => {
           const daysLeft = differenceInDays(parseISO(cert.valid_until), new Date())
           const isExpired = daysLeft < 0
-          const equipment = cert.equipment as Record<string, unknown> | null
+          const equipment = cert.equipment as { name?: string | null; tag_number?: string | null } | null
           return (
             <div
               key={cert.id}
               className={cn(
-                "flex items-center justify-between rounded-md border p-2 text-sm",
-                isExpired ? "border-red-200 bg-red-50" : "border-amber-200 bg-white"
+                "flex items-center justify-between gap-3 rounded-md border px-2 py-1.5 text-sm",
+                isExpired ? "border-danger bg-danger-subtle" : "border-warning/40 bg-card"
               )}
             >
               <div className="min-w-0 flex-1">
@@ -51,10 +50,10 @@ export async function CertificateExpiryAlert() {
                   className={cn(
                     "text-xs",
                     isExpired
-                      ? "bg-red-100 text-red-800"
+                      ? "bg-danger-subtle text-danger-strong"
                       : daysLeft <= 7
-                        ? "bg-red-100 text-red-800"
-                        : "bg-amber-100 text-amber-800"
+                        ? "bg-danger-subtle text-danger-strong"
+                        : "bg-warning-subtle text-warning-strong"
                   )}
                 >
                   {isExpired ? "EXPIRED" : `${daysLeft}d left`}

@@ -7,11 +7,14 @@ import { logAudit } from "@/lib/actions/audit"
 import { recordSignature } from "@/lib/actions/signatures"
 import { pmScheduleSchema } from "@/lib/schemas/pm-schedule"
 import { getCurrentUser } from "@/lib/actions/profiles"
+import { generatePMWorkOrders } from "@/lib/actions/pm-engine"
+import { requirePermission } from "@/lib/actions/permissions"
 import type { PMSchedule } from "@/lib/types"
 import { addDays } from "date-fns"
 
 export async function createPMSchedule(formData: FormData) {
   const supabase = await createClient()
+  await requirePermission({ action: "write", resource: "pm_schedules" }, "/pm-schedules/new")
   const raw = Object.fromEntries(formData)
 
   const checklistRaw = (formData.get("checklist") as string) || ""
@@ -44,15 +47,40 @@ export async function createPMSchedule(formData: FormData) {
     active,
   })
   if (!parsed.success) {
-    const messages = parsed.error.errors.map((e) => e.message).join(", ")
+    const messages = parsed.error.issues.map((e) => e.message).join(", ")
     return redirect(`/pm-schedules/new?error=${encodeURIComponent(messages)}`)
   }
 
-  const nextDue = addDays(new Date(), parsed.data.frequency_days).toISOString()
+  const { data: equipment } = await supabase
+    .from("equipment")
+    .select("status, lifecycle_stage, decommissioning_status")
+    .eq("id", parsed.data.equipment_id)
+    .single()
+
+  if (equipment?.status === "retired" || equipment?.lifecycle_stage === "retired" || equipment?.decommissioning_status === "completed") {
+    return redirect(`/pm-schedules/new?error=${encodeURIComponent("Cannot create PM schedule for retired or decommissioned equipment")}`)
+  }
+
+  const calendarIntervalDays = parsed.data.calendar_interval_days || parsed.data.frequency_days
+  const nextDue = parsed.data.first_due_date
+    ? new Date(parsed.data.first_due_date).toISOString()
+    : addDays(new Date(), calendarIntervalDays).toISOString()
+  const escalationPolicy = {
+    assignee_after_days: parsed.data.escalation_assignee_after_days,
+    admin_after_days: parsed.data.escalation_admin_after_days,
+    department_after_days: parsed.data.escalation_department_after_days,
+  }
 
   const { data, error } = await supabase.from("pm_schedules").insert({
     equipment_id: parsed.data.equipment_id,
     frequency_days: parsed.data.frequency_days,
+    trigger_type: parsed.data.trigger_type,
+    calendar_interval_days: calendarIntervalDays,
+    meter_interval: parsed.data.meter_interval || null,
+    cycle_interval: parsed.data.cycle_interval || null,
+    risk_modifier: parsed.data.risk_modifier,
+    grace_period_days: parsed.data.grace_period_days,
+    escalation_policy: escalationPolicy,
     description: parsed.data.description,
     checklist,
     assigned_to: parsed.data.assigned_to || null,
@@ -98,15 +126,47 @@ export async function startPMTask(pmScheduleId: string) {
   const supabase = await createClient()
   const user = await getCurrentUser()
   if (!user) return redirect("/login")
+  await requirePermission({ action: "run", resource: "pm_schedules" }, "/pm-schedules")
 
   const { data: pm } = await supabase
     .from("pm_schedules")
-    .select("*, equipment(*)")
+    .select("*, equipment(*), occurrences:pm_occurrences(*)")
     .eq("id", pmScheduleId)
     .single()
 
   if (!pm) {
     return redirect("/pm-schedules?error=PM schedule not found")
+  }
+
+  const openOccurrence = (pm.occurrences || []).find((occ: { status: string }) => occ.status === "due" || occ.status === "generated")
+  let occurrenceId = openOccurrence?.id as string | undefined
+
+  if (!occurrenceId) {
+    const nowIso = new Date().toISOString()
+    const { data: occurrence } = await supabase
+      .from("pm_occurrences")
+      .insert({
+        pm_schedule_id: pm.id,
+        equipment_id: pm.equipment_id,
+        due_at: pm.next_due || nowIso,
+        trigger_type: pm.trigger_type || "calendar",
+        due_meter: pm.meter_interval || null,
+        due_cycle: pm.cycle_interval || null,
+      })
+      .select("id")
+      .single()
+    occurrenceId = occurrence?.id
+  }
+
+  const { data: existingOpen } = await supabase
+    .from("work_orders")
+    .select("id")
+    .eq("pm_schedule_id", pmScheduleId)
+    .in("status", ["open", "in_progress", "on_hold"])
+    .limit(1)
+
+  if (existingOpen?.[0]?.id) {
+    redirect(`/work-orders/${existingOpen[0].id}`)
   }
 
   const { data: wo, error } = await supabase
@@ -119,6 +179,8 @@ export async function startPMTask(pmScheduleId: string) {
       description: pm.description || `PM: ${pm.equipment?.name || "Equipment"} (${pm.frequency_days} day cycle)`,
       assigned_to: pm.assigned_to || user.id,
       created_by: user.id,
+      pm_schedule_id: pm.id,
+      pm_occurrence_id: occurrenceId || null,
       started_at: new Date().toISOString(),
     })
     .select()
@@ -131,6 +193,13 @@ export async function startPMTask(pmScheduleId: string) {
   await logAudit("work_orders", wo.id, "insert", [
     { newValue: JSON.stringify({ equipment_id: pm.equipment_id, type: "preventive", description: pm.description, assigned_to: pm.assigned_to || user.id }) }
   ], "Started from PM schedule " + pmScheduleId)
+
+  if (occurrenceId) {
+    await supabase
+      .from("pm_occurrences")
+      .update({ status: "generated", work_order_id: wo.id, generated_at: new Date().toISOString() })
+      .eq("id", occurrenceId)
+  }
 
   revalidatePath("/work-orders")
   revalidatePath("/pm-schedules")
@@ -162,7 +231,15 @@ export async function completePMTask(workOrderId: string, pmScheduleId: string) 
     { field: "next_due", newValue: next }
   ], "PM task completed")
 
-  await recordSignature("pm_schedule", pmScheduleId, "Verified")
+  await recordSignature("pm_schedule", pmScheduleId, "Verified", "PM task completed")
+
+  await supabase
+    .from("pm_occurrences")
+    .update({ status: "completed", completed_at: now, work_order_id: workOrderId })
+    .eq("pm_schedule_id", pmScheduleId)
+    .eq("work_order_id", workOrderId)
+
+  await generatePMWorkOrders(now)
 
   revalidatePath("/pm-schedules")
   revalidatePath("/dashboard")

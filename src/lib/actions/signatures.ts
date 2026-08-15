@@ -19,26 +19,24 @@ export async function recordSignature(
   recordType: string,
   recordId: string,
   meaning: "Verified" | "Calibrated" | "Approved" | "Reviewed",
+  reason: string,
   recordHash?: string
 ): Promise<string | null> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
+  if (!reason.trim()) return null
 
-  const { data, error } = await supabase
-    .from("signatures")
-    .insert({
-      signer_id: user.id,
-      record_type: recordType,
-      record_id: recordId,
-      meaning,
-      signature_hash: recordHash || null,
-    })
-    .select("id")
-    .single()
+  const { data, error } = await supabase.rpc("insert_signature_entry", {
+    p_record_type: recordType,
+    p_record_id: recordId,
+    p_meaning: meaning,
+    p_reason: reason.trim(),
+    p_signature_hash: recordHash || null,
+  })
 
   if (error) return null
-  return data.id
+  return data
 }
 
 export async function getSignatures(recordType: string, recordId: string) {

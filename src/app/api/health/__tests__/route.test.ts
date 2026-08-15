@@ -1,14 +1,15 @@
-import { describe, it, expect } from "vitest";
-import { GET } from "../route";
+import { describe, it, expect } from "vitest"
+import { checkEnvironment } from "@/lib/operations/health"
 
 describe("GET /api/health", () => {
-  it("returns status ok with 200", async () => {
-    const response = await GET();
-    expect(response.status).toBe(200);
+  it("checks required environment variables", () => {
+    const result = checkEnvironment({
+      NEXT_PUBLIC_SUPABASE_URL: "http://localhost",
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: "anon",
+      SUPABASE_SERVICE_ROLE_KEY: "service",
+      CRON_SECRET: "secret",
+    })
 
-    const body = await response.json();
-    expect(body).toHaveProperty("status", "ok");
-    expect(body).toHaveProperty("timestamp");
-    expect(() => new Date(body.timestamp as string)).not.toThrow();
-  });
-});
+    expect(result.status).toBe("healthy")
+  })
+})

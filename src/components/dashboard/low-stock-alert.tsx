@@ -12,22 +12,22 @@ export function LowStockAlert({ parts }: Props) {
   if (low.length === 0) return null
 
   return (
-    <div className="rounded-lg border border-yellow-200 bg-yellow-50">
-      <div className="flex items-center gap-2 border-b border-yellow-200 px-6 py-3">
-        <AlertTriangle className="h-5 w-5 text-yellow-600" />
-        <h3 className="font-semibold text-yellow-800">
+    <div className="rounded-lg border border-warning bg-warning-subtle">
+      <div className="flex items-center gap-2 border-b border-warning/40 px-4 py-2.5">
+        <AlertTriangle className="h-4 w-4 text-warning-strong" />
+        <h3 className="text-sm font-semibold text-warning-strong">
           {low.length} Part{low.length > 1 ? "s" : ""} Low Stock
         </h3>
       </div>
-      <div className="divide-y divide-yellow-100">
+      <div className="divide-y divide-warning/20">
         {low.map((part) => (
           <Link
             key={part.id}
             href="/parts"
-            className="flex items-center justify-between px-6 py-3 hover:bg-yellow-100"
+            className="flex items-center justify-between gap-3 px-4 py-2 hover:bg-warning/10"
           >
-            <span className="text-sm font-medium text-yellow-700">{part.name}</span>
-            <span className="text-xs text-yellow-600">
+            <span className="truncate text-sm font-medium text-warning-strong">{part.name}</span>
+            <span className="shrink-0 text-xs text-warning-strong">
               {part.quantity_on_hand} / min {part.min_threshold}
             </span>
           </Link>

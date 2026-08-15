@@ -1,9 +1,13 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { getWorkOrderById } from "@/lib/actions/work-orders"
+import { getWorkOrderById, getWorkOrderCloseoutStatus } from "@/lib/actions/work-orders"
 import { WorkOrderDetailCard } from "@/components/work-orders/wo-detail-card"
 import { CommentTimeline } from "@/components/work-orders/comment-timeline"
 import { JobCardSection } from "@/components/work-orders/job-card-section"
+import { OfflineSyncBanner } from "@/components/work-orders/offline-sync-banner"
+import { WorkOrderPhotoSection } from "@/components/work-orders/work-order-photo-section"
+import { CaseTimeline } from "@/components/shared/case-timeline"
+import { getCaseTimelineForWorkOrder } from "@/lib/actions/case-timeline"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { ChevronLeft, Printer } from "lucide-react"
@@ -14,7 +18,11 @@ export default async function WorkOrderDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const wo = await getWorkOrderById(id)
+  const [wo, closeoutStatus, timeline] = await Promise.all([
+    getWorkOrderById(id),
+    getWorkOrderCloseoutStatus(id),
+    getCaseTimelineForWorkOrder(id),
+  ])
 
   if (!wo) notFound()
 
@@ -38,11 +46,17 @@ export default async function WorkOrderDetailPage({
         )}
       </div>
 
+      <OfflineSyncBanner workOrderId={id} />
+
       <div className="rounded-lg border bg-white p-6">
-        <WorkOrderDetailCard workOrder={wo} />
+        <WorkOrderDetailCard workOrder={wo} closeoutStatus={closeoutStatus} />
       </div>
 
+      <CaseTimeline events={timeline} />
+
       <JobCardSection workOrderId={id} woStatus={wo.status} />
+
+      <WorkOrderPhotoSection workOrderId={id} woStatus={wo.status} />
 
       <div className="rounded-lg border bg-white p-6">
         <CommentTimeline workOrderId={id} />

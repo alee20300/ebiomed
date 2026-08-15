@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils/cn"
+import { Badge } from "@/components/ui/badge"
 import { priorityColor } from "@/lib/utils/format"
 
 interface Props {
@@ -8,14 +9,14 @@ interface Props {
 
 export function PriorityBadge({ priority, className }: Props) {
   return (
-    <span
+    <Badge
       className={cn(
-        "inline-flex rounded-full px-2 py-0.5 text-xs font-medium capitalize",
+        "capitalize",
         priorityColor(priority),
         className
       )}
     >
       {priority}
-    </span>
+    </Badge>
   )
 }

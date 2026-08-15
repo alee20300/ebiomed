@@ -12,7 +12,7 @@ async function JobCardList({ workOrderId }: { workOrderId: string }) {
 
   if (jobCards.length === 0) {
     return (
-      <p className="py-6 text-center text-sm text-gray-500">
+      <p className="py-6 text-center text-sm text-muted-foreground">
         No job cards yet. Start one to track work on this order.
       </p>
     )

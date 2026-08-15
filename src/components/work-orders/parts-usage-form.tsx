@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label"
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
+import { enqueueOfflineDraft, type PartsUsageDraftPayload } from "@/lib/offline/work-order-drafts"
 import type { Part } from "@/lib/types"
 
 interface Props {
@@ -17,6 +18,7 @@ interface Props {
 
 export function PartsUsageForm({ workOrderId }: Props) {
   const [parts, setParts] = useState<Part[]>([])
+  const [message, setMessage] = useState("")
   const supabase = createClient()
 
   useEffect(() => {
@@ -29,7 +31,24 @@ export function PartsUsageForm({ workOrderId }: Props) {
   }, [supabase])
 
   return (
-    <form action={consumeParts} className="space-y-4">
+    <form
+      action={async (formData) => {
+        setMessage("")
+        if (!navigator.onLine) {
+          const payload: PartsUsageDraftPayload = {
+            workOrderId,
+            partId: String(formData.get("part_id") || ""),
+            quantityUsed: Number(formData.get("quantity_used") || 0),
+            reason: String(formData.get("reason") || ""),
+          }
+          await enqueueOfflineDraft("parts_usage", workOrderId, payload)
+          setMessage("Offline parts usage saved.")
+          return
+        }
+        await consumeParts(formData)
+      }}
+      className="space-y-4"
+    >
       <input type="hidden" name="work_order_id" value={workOrderId} />
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
@@ -50,7 +69,18 @@ export function PartsUsageForm({ workOrderId }: Props) {
           <Input id="quantity_used" name="quantity_used" type="number" min={1} required />
         </div>
       </div>
+      <div>
+        <Label htmlFor="parts_reason">Reason</Label>
+        <Input
+          id="parts_reason"
+          name="reason"
+          minLength={5}
+          required
+          placeholder="Repair parts used"
+        />
+      </div>
       <Button type="submit" size="sm">Log Parts Used</Button>
+      {message && <p className="text-xs text-muted-foreground">{message}</p>}
     </form>
   )
 }

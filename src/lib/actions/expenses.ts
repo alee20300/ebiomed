@@ -5,12 +5,14 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getCurrentUser } from "@/lib/actions/profiles"
 import { getAppSetting } from "@/lib/actions/settings"
+import { requirePermission } from "@/lib/actions/permissions"
 import { expenseSchema } from "@/lib/schemas/expense"
 
 export async function addJobCardExpense(jobCardId: string, formData: FormData) {
   const supabase = await createClient()
   const user = await getCurrentUser()
   if (!user) return redirect("/login")
+  await requirePermission({ action: "write", resource: "job_cards" })
 
   const enabled = await getAppSetting("expense_tracking_enabled")
   if (enabled !== true) {
@@ -20,7 +22,7 @@ export async function addJobCardExpense(jobCardId: string, formData: FormData) {
   const raw = Object.fromEntries(formData)
   const parsed = expenseSchema.safeParse(raw)
   if (!parsed.success) {
-    throw new Error(parsed.error.errors.map((e) => e.message).join(", "))
+    throw new Error(parsed.error.issues.map((e) => e.message).join(", "))
   }
 
   let slipUrl: string | null = null
@@ -96,6 +98,7 @@ export async function deleteJobCardExpense(id: string) {
   const supabase = await createClient()
   const user = await getCurrentUser()
   if (!user) return redirect("/login")
+  await requirePermission({ action: "write", resource: "job_cards" })
 
   const { data: expense } = await supabase
     .schema("ebiomed")

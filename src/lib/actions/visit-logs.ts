@@ -22,7 +22,7 @@ export async function logEngineerVisit(formData: FormData) {
   const raw = Object.fromEntries(formData)
   const parsed = logVisitSchema.safeParse(raw)
   if (!parsed.success) {
-    throw new Error(parsed.error.errors.map((e) => e.message).join(", "))
+    throw new Error(parsed.error.issues.map((e) => e.message).join(", "))
   }
 
   const { data: complaint } = await supabase

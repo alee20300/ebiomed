@@ -7,6 +7,7 @@ interface SignatureBlockProps {
     id: string
     meaning: "Verified" | "Calibrated" | "Approved" | "Reviewed"
     signed_at: string
+    reason?: string | null
     signer?: { full_name: string; role: string } | null
     signature_hash?: string | null
   }>
@@ -52,6 +53,11 @@ export function SignatureBlock({ signatures, compact = false }: SignatureBlockPr
                   {sig.signer?.role && (
                     <p className={compact ? "text-[11px] text-muted-foreground" : "text-xs text-muted-foreground"}>
                       Role: {sig.signer.role}
+                    </p>
+                  )}
+                  {sig.reason && (
+                    <p className={compact ? "text-[11px] text-muted-foreground" : "text-xs text-muted-foreground"}>
+                      Reason: {sig.reason}
                     </p>
                   )}
                   {sig.signature_hash && (

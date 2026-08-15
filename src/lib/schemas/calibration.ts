@@ -34,6 +34,21 @@ export const environmentalReadingSchema = z.object({
   humidity_percent: z.coerce.number().optional(),
 })
 
+export const calibrationInvestigationSchema = z.object({
+  reading_id: z.string().uuid("Calibration reading is required"),
+  equipment_id: z.string().uuid("Equipment is required"),
+  investigation_status: z.enum(["in_progress", "completed"]),
+  investigation_notes: z.string().min(5, "Investigation notes are required").max(1000),
+  corrective_action: z.string().max(1000).optional(),
+  reason: z.string().min(5, "Reason for change is required").max(500),
+}).refine(
+  (data) => data.investigation_status !== "completed" || !!data.corrective_action?.trim(),
+  {
+    message: "Corrective action is required to complete investigation",
+    path: ["corrective_action"],
+  }
+)
+
 export const calibrationBatchSchema = z.object({
   equipment_id: z.string().uuid("Equipment is required"),
   reference_standard_id: z.string().uuid("Reference standard is required"),
@@ -54,3 +69,4 @@ export const calibrationBatchSchema = z.object({
 export type ReferenceStandardFormData = z.infer<typeof referenceStandardSchema>
 export type CalibrationReadingFormData = z.infer<typeof calibrationReadingSchema>
 export type CalibrationBatchFormData = z.infer<typeof calibrationBatchSchema>
+export type CalibrationInvestigationFormData = z.infer<typeof calibrationInvestigationSchema>

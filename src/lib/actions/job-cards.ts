@@ -5,6 +5,7 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getCurrentUser } from "@/lib/actions/profiles"
 import { logAudit } from "@/lib/actions/audit"
+import { requirePermission } from "@/lib/actions/permissions"
 import { jobCardCompleteSchema, jobCardEntrySchema, jobCardPartSchema } from "@/lib/schemas/job-card"
 import type { JobCard } from "@/lib/types"
 
@@ -12,6 +13,7 @@ export async function createJobCard(workOrderId: string) {
   const supabase = await createClient()
   const user = await getCurrentUser()
   if (!user) return redirect("/login")
+  await requirePermission({ action: "write", resource: "job_cards" }, `/work-orders/${workOrderId}`)
 
   const { data, error } = await supabase
     .schema("ebiomed")
@@ -37,11 +39,12 @@ export async function completeJobCard(id: string, formData: FormData) {
   const supabase = await createClient()
   const user = await getCurrentUser()
   if (!user) return redirect("/login")
+  await requirePermission({ action: "complete", resource: "job_cards" })
 
   const raw = Object.fromEntries(formData)
   const parsed = jobCardCompleteSchema.safeParse(raw)
   if (!parsed.success) {
-    throw new Error(parsed.error.errors.map((e) => e.message).join(", "))
+    throw new Error(parsed.error.issues.map((e) => e.message).join(", "))
   }
 
   const { data: jc, error } = await supabase
@@ -83,16 +86,21 @@ export async function addJobCardEntry(jobCardId: string, formData: FormData) {
   const supabase = await createClient()
   const user = await getCurrentUser()
   if (!user) return redirect("/login")
+  await requirePermission({ action: "write", resource: "job_cards" })
 
   const raw = Object.fromEntries(formData)
   const parsed = jobCardEntrySchema.safeParse(raw)
   if (!parsed.success) {
-    throw new Error(parsed.error.errors.map((e) => e.message).join(", "))
+    throw new Error(parsed.error.issues.map((e) => e.message).join(", "))
   }
 
   const started = new Date(parsed.data.started_at)
   const ended = new Date(parsed.data.ended_at)
   const durationMinutes = Math.round((ended.getTime() - started.getTime()) / 60000)
+
+  if (durationMinutes <= 0) {
+    throw new Error("End time must be after start time")
+  }
 
   const { error } = await supabase
     .schema("ebiomed")
@@ -121,11 +129,12 @@ export async function addJobCardPart(jobCardId: string, formData: FormData) {
   const supabase = await createClient()
   const user = await getCurrentUser()
   if (!user) return redirect("/login")
+  await requirePermission({ action: "write", resource: "job_cards" })
 
   const raw = Object.fromEntries(formData)
   const parsed = jobCardPartSchema.safeParse(raw)
   if (!parsed.success) {
-    throw new Error(parsed.error.errors.map((e) => e.message).join(", "))
+    throw new Error(parsed.error.issues.map((e) => e.message).join(", "))
   }
 
   const { error } = await supabase

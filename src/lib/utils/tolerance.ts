@@ -25,8 +25,8 @@ export function getToleranceStatusDisplay(result: ToleranceResult): {
   if (!result.passed) {
     return {
       label: "Out of Tolerance",
-      color: "text-red-800",
-      bgColor: "bg-red-100",
+      color: "text-danger-strong",
+      bgColor: "bg-danger-subtle",
     }
   }
 
@@ -34,14 +34,14 @@ export function getToleranceStatusDisplay(result: ToleranceResult): {
   if (absDeviation > 50) {
     return {
       label: "Marginal",
-      color: "text-yellow-800",
-      bgColor: "bg-yellow-100",
+      color: "text-warning-strong",
+      bgColor: "bg-warning-subtle",
     }
   }
 
   return {
     label: "Within Tolerance",
-    color: "text-green-800",
-    bgColor: "bg-green-100",
+    color: "text-success-strong",
+    bgColor: "bg-success-subtle",
   }
 }

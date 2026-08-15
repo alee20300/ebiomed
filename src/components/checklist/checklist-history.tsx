@@ -1,6 +1,7 @@
 import { getChecklistSubmissions } from "@/lib/actions/checklist"
 import { formatDateTime } from "@/lib/utils/format"
 import { Badge } from "@/components/ui/badge"
+import type { ChecklistItem } from "@/lib/types"
 
 interface Props {
   equipmentId: string
@@ -11,7 +12,7 @@ export async function ChecklistHistory({ equipmentId }: Props) {
 
   if (submissions.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-gray-500">
+      <p className="py-8 text-center text-sm text-muted-foreground">
         No checklist submissions yet. End users can submit checklists by scanning the QR code on the equipment label.
       </p>
     )
@@ -21,7 +22,8 @@ export async function ChecklistHistory({ equipmentId }: Props) {
     <div className="space-y-4">
       {submissions.map((submission) => {
         const failedCount = submission.items.filter((i) => i.status === "not_ok").length
-        const templateName = (submission as any).template?.name || "Checklist"
+        const template = submission.template as { name?: string | null } | null | undefined
+        const templateName = template?.name || "Checklist"
 
         return (
           <div key={submission.id} className="rounded-lg border bg-white p-4">
@@ -36,22 +38,23 @@ export async function ChecklistHistory({ equipmentId }: Props) {
                   <Badge variant="secondary" className="ml-2">All OK</Badge>
                 )}
               </div>
-              <span className="text-xs text-gray-500">{formatDateTime(submission.created_at)}</span>
+              <span className="text-xs text-muted-foreground">{formatDateTime(submission.created_at)}</span>
             </div>
 
             <div className="space-y-1">
               {submission.items.map((item) => {
-                const itemType = (item as any).type || "checkbox"
-                const itemValue = (item as any).value || ""
+                const richItem = item as ChecklistItem & { value?: string | number | null }
+                const itemType = richItem.type || "checkbox"
+                const itemValue = richItem.value || ""
                 const isFailed = item.status === "not_ok"
                 const isCheckbox = itemType === "checkbox"
 
                 return (
                   <div key={item.id} className="flex items-center gap-2 text-sm">
-                    <span className={isFailed ? "text-red-600" : "text-green-600"}>
+                    <span className={isFailed ? "text-danger-strong" : "text-success-strong"}>
                       {isFailed ? "✗" : "✓"}
                     </span>
-                    <span className={isFailed ? "" : "text-gray-600"}>
+                    <span className={isFailed ? "" : "text-muted-foreground"}>
                       {item.text}
                       {!isCheckbox && itemValue && (
                         <span className="ml-1 font-medium">
@@ -65,7 +68,7 @@ export async function ChecklistHistory({ equipmentId }: Props) {
             </div>
 
             {(submission.submitted_by_name || submission.submitted_by_department || submission.notes) && (
-              <div className="mt-3 border-t pt-2 text-xs text-gray-500">
+              <div className="mt-3 border-t pt-2 text-xs text-muted-foreground">
                 {submission.submitted_by_name && <span>By: {submission.submitted_by_name}</span>}
                 {submission.submitted_by_department && <span> — {submission.submitted_by_department}</span>}
                 {submission.notes && <p className="mt-1 italic">{submission.notes}</p>}

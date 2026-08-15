@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils/cn"
+import { Badge } from "@/components/ui/badge"
 import { statusColor } from "@/lib/utils/format"
 
 interface Props {
@@ -8,14 +9,14 @@ interface Props {
 
 export function StatusBadge({ status, className }: Props) {
   return (
-    <span
+    <Badge
       className={cn(
-        "inline-flex rounded-full px-2 py-0.5 text-xs font-medium capitalize",
+        "capitalize",
         statusColor(status),
         className
       )}
     >
       {status.replace("_", " ")}
-    </span>
+    </Badge>
   )
 }

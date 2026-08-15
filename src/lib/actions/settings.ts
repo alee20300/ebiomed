@@ -2,9 +2,10 @@
 
 import { createClient } from "@/lib/supabase/server"
 import { getCurrentUser } from "@/lib/actions/profiles"
+import { requirePermission } from "@/lib/actions/permissions"
 import { redirect } from "next/navigation"
 
-export async function getAppSetting(key: string): Promise<any | null> {
+export async function getAppSetting(key: string): Promise<unknown | null> {
   const supabase = await createClient()
 
   const { data } = await supabase
@@ -17,13 +18,11 @@ export async function getAppSetting(key: string): Promise<any | null> {
   return data?.value ?? null
 }
 
-export async function updateAppSetting(key: string, value: any) {
+export async function updateAppSetting(key: string, value: unknown) {
   const supabase = await createClient()
   const user = await getCurrentUser()
   if (!user) return redirect("/login")
-  if (user.role !== "admin") {
-    throw new Error("Only admins can update settings")
-  }
+  await requirePermission({ action: "write", resource: "settings" }, "/settings")
 
   const { error } = await supabase
     .schema("ebiomed")

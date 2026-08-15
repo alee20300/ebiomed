@@ -55,7 +55,7 @@ describe("getToleranceStatusDisplay", () => {
     const result = evaluateTolerance(50, 100, 90, 110)
     const display = getToleranceStatusDisplay(result)
     expect(display.label).toBe("Out of Tolerance")
-    expect(display.color).toBe("text-red-800")
+    expect(display.color).toBe("text-danger-strong")
   })
 
   it("returns marginal for readings with high deviation", () => {
@@ -68,6 +68,6 @@ describe("getToleranceStatusDisplay", () => {
     const result = evaluateTolerance(100, 100, 95, 105)
     const display = getToleranceStatusDisplay(result)
     expect(display.label).toBe("Within Tolerance")
-    expect(display.color).toBe("text-green-800")
+    expect(display.color).toBe("text-success-strong")
   })
 })

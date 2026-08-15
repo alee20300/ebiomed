@@ -3,6 +3,7 @@ import { Suspense } from "react"
 import { getPMSchedules } from "@/lib/actions/pm-schedules"
 import { getCurrentUser } from "@/lib/actions/profiles"
 import { PMTable } from "@/components/pm-schedules/pm-table"
+import { PMDashboard } from "@/components/pm-schedules/pm-dashboard"
 import { PMActions } from "@/components/pm-schedules/pm-actions"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -29,6 +30,9 @@ export default async function PMSchedulesPage() {
         <h2 className="text-2xl font-bold tracking-tight">PM Schedules</h2>
         <PMActions isViewer={isViewer} />
       </div>
+      <Suspense fallback={<Skeleton className="h-48 w-full" />}>
+        <PMDashboard />
+      </Suspense>
       <Suspense fallback={<Loading />}>
         <PMList />
       </Suspense>

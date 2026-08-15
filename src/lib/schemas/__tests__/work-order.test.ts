@@ -76,6 +76,12 @@ describe("workOrderUpdateSchema", () => {
       const result = workOrderUpdateSchema.safeParse({
         status,
         reason: "Valid reason for status change",
+        ...(status === "completed"
+          ? {
+              root_cause: "Documented equipment component failure",
+              service_outcome: "repaired",
+            }
+          : {}),
       })
       expect(result.success).toBe(true)
     }

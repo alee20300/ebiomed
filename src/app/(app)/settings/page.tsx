@@ -21,14 +21,18 @@ import {
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Skeleton } from "@/components/ui/skeleton"
-import { UserPlus, Trash2, Settings2, Users, Building2, ClipboardCheck, Wrench } from "lucide-react"
-import { signup } from "@/lib/actions/profiles"
+import { FileSpreadsheet, KeyRound, UserPlus, Trash2, Settings2, Users, Building2, ClipboardCheck, Wrench } from "lucide-react"
+import { getProfiles, signup } from "@/lib/actions/profiles"
 import { ViewerDepartmentsDialog } from "@/components/settings/viewer-departments-dialog"
 import { ChecklistTemplatesTab } from "@/components/settings/checklist-templates-tab"
 import { getAppSetting } from "@/lib/actions/settings"
 import { CallLogToggle } from "@/components/settings/call-log-toggle"
 import { ExpenseToggle } from "@/components/settings/expense-toggle"
-import type { Profile, Equipment } from "@/lib/types"
+import { commitImportBatch, previewImport, rollbackImportBatch } from "@/lib/actions/imports"
+import { getPermissionAdminData, savePermissionGrant } from "@/lib/actions/permissions"
+import { IMPORT_TEMPLATES } from "@/lib/imports/templates"
+import { bulkUpdateEquipment } from "@/lib/actions/bulk-updates"
+import type { Profile } from "@/lib/types"
 import { StatusBadge } from "@/components/shared/status-badge"
 import Link from "next/link"
 
@@ -120,7 +124,7 @@ async function UsersList() {
             ))}
             {profiles.length === 0 && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-gray-500 py-8">No users found.</TableCell>
+                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">No users found.</TableCell>
               </TableRow>
             )}
           </TableBody>
@@ -160,7 +164,7 @@ async function DepartmentsList() {
                 {isAdmin && (
                   <TableCell>
                     <form action={deleteDepartment.bind(null, dept.id)}>
-                      <button type="submit" className="text-red-500 hover:text-red-700">
+                      <button type="submit" className="text-danger-strong hover:text-danger-strong">
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </form>
@@ -170,7 +174,7 @@ async function DepartmentsList() {
             ))}
             {departments.length === 0 && (
               <TableRow>
-                <TableCell colSpan={isAdmin ? 2 : 1} className="text-center text-gray-500 py-8">
+                <TableCell colSpan={isAdmin ? 2 : 1} className="text-center text-muted-foreground py-8">
                   No departments configured.
                 </TableCell>
               </TableRow>
@@ -193,7 +197,7 @@ async function EquipmentTab() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500">{equipment.length} equipment registered</p>
+        <p className="text-sm text-muted-foreground">{equipment.length} equipment registered</p>
         <Dialog>
           <DialogTrigger className={cn(buttonVariants({}))}>
             <UserPlus className="mr-2 h-4 w-4" />
@@ -265,7 +269,7 @@ async function EquipmentTab() {
       </div>
 
       {equipment.length === 0 ? (
-        <p className="py-8 text-center text-sm text-gray-500">No equipment registered yet.</p>
+        <p className="py-8 text-center text-sm text-muted-foreground">No equipment registered yet.</p>
       ) : (
         <div className="rounded-lg border bg-white">
           <Table>
@@ -287,8 +291,8 @@ async function EquipmentTab() {
                       {eq.name}
                     </Link>
                   </TableCell>
-                  <TableCell className="text-sm text-gray-500">{eq.department || "—"}</TableCell>
-                  <TableCell className="text-sm text-gray-500">{eq.location || "—"}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{eq.department || "—"}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{eq.location || "—"}</TableCell>
                   <TableCell><StatusBadge status={eq.status} /></TableCell>
                 </TableRow>
               ))}
@@ -311,20 +315,237 @@ async function GeneralTab() {
     <div className="space-y-4">
       <ExpenseToggle initialEnabled={isExpenseEnabled} />
       <CallLogToggle initialEnabled={isCallLogEnabled} />
+      <div className="rounded-lg border p-4">
+        <h3 className="font-medium">Enterprise Exports</h3>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Link href="/api/reports/export?report=inventory&format=csv" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+            Inventory CSV
+          </Link>
+          <Link href="/api/reports/export?report=inventory&format=xlsx" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+            Inventory XLSX
+          </Link>
+          <Link href="/api/v1/power-bi/export" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+            Power BI JSON
+          </Link>
+          <Link href="/docs/runbooks/backup-restore.md" className={cn(buttonVariants({ variant: "outline", size: "sm" }))}>
+            Backup Runbook
+          </Link>
+        </div>
+      </div>
     </div>
   )
 }
 
-export default async function SettingsPage() {
+async function PermissionsTab() {
+  const [profiles, permissionData] = await Promise.all([getProfiles(), getPermissionAdminData()])
+  return (
+    <div className="space-y-6">
+      <form action={savePermissionGrant} className="grid gap-3 rounded-lg border p-4 md:grid-cols-6">
+        <div>
+          <Label htmlFor="permission-profile">User</Label>
+          <select id="permission-profile" name="profile_id" className="h-10 w-full rounded-md border bg-background px-3 text-sm" required>
+            <option value="">Select user</option>
+            {profiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.full_name}</option>)}
+          </select>
+        </div>
+        <div><Label htmlFor="permission-action">Action</Label><Input id="permission-action" name="action" placeholder="read" required /></div>
+        <div><Label htmlFor="permission-resource">Resource</Label><Input id="permission-resource" name="resource" placeholder="inventory" required /></div>
+        <div>
+          <Label htmlFor="permission-scope">Scope</Label>
+          <select id="permission-scope" name="scope_type" className="h-10 w-full rounded-md border bg-background px-3 text-sm" defaultValue="global">
+            <option value="global">Global</option>
+            <option value="site">Site</option>
+            <option value="department">Department</option>
+            <option value="building">Building</option>
+            <option value="floor">Floor</option>
+            <option value="room">Room</option>
+          </select>
+        </div>
+        <div><Label htmlFor="permission-scope-id">Scope ID</Label><Input id="permission-scope-id" name="scope_id" /></div>
+        <div><Label htmlFor="permission-reason">Reason</Label><Input id="permission-reason" name="reason" required minLength={5} /></div>
+        <Button type="submit" className="md:col-span-6">Save Permission</Button>
+      </form>
+
+      <div className="rounded-lg border bg-white">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>User</TableHead>
+              <TableHead>Permission</TableHead>
+              <TableHead>Scope</TableHead>
+              <TableHead>Granted</TableHead>
+              <TableHead>Reason</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {permissionData.grants.map((grant) => (
+              <TableRow key={grant.id}>
+                <TableCell>{grant.profile?.full_name || grant.profile_id}</TableCell>
+                <TableCell>{grant.action}:{grant.resource}</TableCell>
+                <TableCell>{grant.scope_type}{grant.scope_id ? `:${grant.scope_id}` : ""}</TableCell>
+                <TableCell>{grant.granted ? "Yes" : "No"}</TableCell>
+                <TableCell>{grant.reason}</TableCell>
+              </TableRow>
+            ))}
+            {permissionData.grants.length === 0 && (
+              <TableRow><TableCell colSpan={5} className="py-8 text-center text-muted-foreground">No explicit permission grants.</TableCell></TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <div className="rounded-lg border bg-white">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>User</TableHead>
+              <TableHead>Change</TableHead>
+              <TableHead>Reason</TableHead>
+              <TableHead>Date</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {permissionData.audit.map((entry) => (
+              <TableRow key={entry.id}>
+                <TableCell>{entry.profile?.full_name || entry.profile_id}</TableCell>
+                <TableCell>{entry.action}:{entry.resource} {String(entry.old_granted)} → {String(entry.new_granted)}</TableCell>
+                <TableCell>{entry.reason}</TableCell>
+                <TableCell>{entry.changed_at.slice(0, 10)}</TableCell>
+              </TableRow>
+            ))}
+            {permissionData.audit.length === 0 && (
+              <TableRow><TableCell colSpan={4} className="py-8 text-center text-muted-foreground">No permission audit entries.</TableCell></TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  )
+}
+
+async function ImportsTab({ batchId }: { batchId?: string }) {
+  const supabase = await createClient()
+  const [{ data: batches }, profiles] = await Promise.all([
+    supabase
+      .schema("ebiomed")
+      .from("import_batches")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(10),
+    getProfiles(),
+  ])
+  const selected = batchId ? batches?.find((batch) => batch.id === batchId) : batches?.[0]
+
+  return (
+    <div className="space-y-6">
+      <form action={previewImport} className="grid gap-3 rounded-lg border p-4 md:grid-cols-[220px_1fr_auto]">
+        <div>
+          <Label htmlFor="template">Template</Label>
+          <select id="template" name="template" className="h-10 w-full rounded-md border bg-background px-3 text-sm">
+            {Object.keys(IMPORT_TEMPLATES).map((template) => <option key={template} value={template}>{template}</option>)}
+          </select>
+        </div>
+        <div><Label htmlFor="file">CSV/XLSX CSV Export</Label><Input id="file" name="file" type="file" accept=".csv,.xlsx" required /></div>
+        <div className="flex items-end"><Button type="submit">Preview Import</Button></div>
+      </form>
+
+      <div className="rounded-lg border bg-white p-4">
+        <h3 className="font-medium">Templates</h3>
+        <div className="mt-3 grid gap-2 md:grid-cols-2">
+          {Object.entries(IMPORT_TEMPLATES).map(([template, headers]) => (
+            <div key={template} className="rounded-md border p-3">
+              <div className="font-medium capitalize">{template}</div>
+              <div className="mt-1 text-xs text-muted-foreground">{headers.join(", ")}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {selected && (
+        <div className="rounded-lg border bg-white p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-medium">{selected.filename || selected.template}</h3>
+              <p className="text-sm text-muted-foreground">
+                {selected.valid_rows}/{selected.total_rows} valid · {selected.duplicate_rows} duplicates · {selected.error_rows} errors · {selected.status}
+              </p>
+            </div>
+            {selected.status === "previewed" && (
+              <div className="flex gap-2">
+                <form action={commitImportBatch}>
+                  <input type="hidden" name="id" value={selected.id} />
+                  <Button type="submit" size="sm">Commit</Button>
+                </form>
+                <form action={rollbackImportBatch}>
+                  <input type="hidden" name="id" value={selected.id} />
+                  <Button type="submit" variant="outline" size="sm">Rollback</Button>
+                </form>
+              </div>
+            )}
+          </div>
+          <pre className="mt-3 max-h-72 overflow-auto rounded-md bg-muted p-3 text-xs">{JSON.stringify({
+            errors: selected.errors,
+            duplicates: selected.duplicate_matches,
+            preview: selected.preview,
+          }, null, 2)}</pre>
+        </div>
+      )}
+
+      <form action={bulkUpdateEquipment} className="grid gap-3 rounded-lg border p-4 md:grid-cols-2">
+        <div className="md:col-span-2">
+          <Label htmlFor="tag_numbers">Equipment Tags</Label>
+          <textarea
+            id="tag_numbers"
+            name="tag_numbers"
+            className="min-h-24 w-full rounded-md border bg-background px-3 py-2 text-sm"
+            placeholder="BM-001, BM-002"
+            required
+          />
+        </div>
+        <div><Label htmlFor="bulk-department">Department</Label><Input id="bulk-department" name="department" /></div>
+        <div><Label htmlFor="bulk-location">Location</Label><Input id="bulk-location" name="location" /></div>
+        <div>
+          <Label htmlFor="bulk-status">Status</Label>
+          <select id="bulk-status" name="status" className="h-10 w-full rounded-md border bg-background px-3 text-sm">
+            <option value="">No status change</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="under_repair">Under Repair</option>
+            <option value="retired">Retired</option>
+          </select>
+        </div>
+        <div>
+          <Label htmlFor="assigned_pm">Assigned PM</Label>
+          <select id="assigned_pm" name="assigned_pm" className="h-10 w-full rounded-md border bg-background px-3 text-sm">
+            <option value="">No PM owner change</option>
+            {profiles.filter((profile) => profile.role !== "viewer").map((profile) => (
+              <option key={profile.id} value={profile.id}>{profile.full_name}</option>
+            ))}
+          </select>
+        </div>
+        <Button type="submit" className="md:col-span-2">Apply Bulk Update</Button>
+      </form>
+    </div>
+  )
+}
+
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ import_batch?: string }>
+}) {
   const user = await getCurrentUser()
   if (user?.role === "viewer") redirect("/dashboard")
+
+  const params = await searchParams
 
   return (
     <div className="space-y-6">
       <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
 
-      <Tabs defaultValue="general" className="w-full">
-        <TabsList>
+      <Tabs defaultValue="general" className="w-full min-w-0">
+        <div className="overflow-x-auto pb-1">
+        <TabsList className="min-w-max">
           <TabsTrigger value="general">
             <Settings2 className="mr-1.5 h-4 w-4" />
             General
@@ -345,35 +566,56 @@ export default async function SettingsPage() {
             <Wrench className="mr-1.5 h-4 w-4" />
             Equipment
           </TabsTrigger>
+          <TabsTrigger value="permissions">
+            <KeyRound className="mr-1.5 h-4 w-4" />
+            Permissions
+          </TabsTrigger>
+          <TabsTrigger value="imports">
+            <FileSpreadsheet className="mr-1.5 h-4 w-4" />
+            Imports
+          </TabsTrigger>
         </TabsList>
+        </div>
 
-        <TabsContent value="general" className="rounded-lg border bg-white p-6">
+        <TabsContent value="general" className="rounded-lg border bg-white p-4 sm:p-6">
           <Suspense fallback={<Skeleton className="h-32 w-full" />}>
             <GeneralTab />
           </Suspense>
         </TabsContent>
 
-        <TabsContent value="users" className="rounded-lg border bg-white p-6">
+        <TabsContent value="users" className="rounded-lg border bg-white p-4 sm:p-6">
           <Suspense fallback={<Skeleton className="h-64 w-full" />}>
             <UsersList />
           </Suspense>
         </TabsContent>
 
-        <TabsContent value="departments" className="rounded-lg border bg-white p-6">
+        <TabsContent value="departments" className="rounded-lg border bg-white p-4 sm:p-6">
           <Suspense fallback={<Skeleton className="h-32 w-full" />}>
             <DepartmentsList />
           </Suspense>
         </TabsContent>
 
-        <TabsContent value="checklists" className="rounded-lg border bg-white p-6">
+        <TabsContent value="checklists" className="rounded-lg border bg-white p-4 sm:p-6">
           <Suspense fallback={<Skeleton className="h-32 w-full" />}>
             <ChecklistTab />
           </Suspense>
         </TabsContent>
 
-        <TabsContent value="equipment" className="rounded-lg border bg-white p-6">
+        <TabsContent value="equipment" className="rounded-lg border bg-white p-4 sm:p-6">
           <Suspense fallback={<Skeleton className="h-32 w-full" />}>
             <EquipmentTab />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="permissions" className="rounded-lg border bg-white p-4 sm:p-6">
+          <Suspense fallback={<Skeleton className="h-64 w-full" />}>
+            <PermissionsTab />
+          </Suspense>
+        </TabsContent>
+
+        <TabsContent value="imports" className="rounded-lg border bg-white p-4 sm:p-6">
+          <Suspense fallback={<Skeleton className="h-64 w-full" />}>
+            <ImportsTab batchId={params.import_batch} />
           </Suspense>
         </TabsContent>
       </Tabs>

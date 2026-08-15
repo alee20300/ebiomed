@@ -47,6 +47,12 @@ next-env.d.ts
 # opencode agent artifacts
 .opencode/
 
+# local agent and generated knowledge-graph artifacts
+.superpowers/
+graphify-out/cache/
+graphify-out/.graphify_*.json
+src/graphify-out/
+
 # supabase local dev volume
 supabase/.temp/
 

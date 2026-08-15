@@ -3,16 +3,30 @@
 import { createClient } from "@/lib/supabase/server"
 import { getCurrentUser } from "@/lib/actions/profiles"
 import { logAudit } from "@/lib/actions/audit"
-import { createHash } from "crypto"
+import { hasPermission } from "@/lib/actions/permissions"
+import { recordSignature, verifyPassword } from "@/lib/actions/signatures"
+import {
+  buildCertificateNumber,
+  calculateCertificateValidUntil,
+  computeAuditTrailHash,
+} from "@/lib/utils/certificates"
 import type { Certificate, CalibrationReading } from "@/lib/types"
 
 export async function generateCertificate(
   equipmentId: string,
-  calibrationWorkOrderId: string | null
+  calibrationWorkOrderId: string | null,
+  options: { reason: string; reauthPassword: string }
 ): Promise<{ success: boolean; certificateId?: string; error?: string }> {
   const supabase = await createClient()
   const user = await getCurrentUser()
   if (!user) return { success: false, error: "Not authenticated" }
+  if (!await hasPermission({ action: "issue", resource: "certificates" })) {
+    return { success: false, error: "You do not have permission to issue certificates" }
+  }
+  if (!options.reason.trim()) return { success: false, error: "Certificate issue reason is required" }
+
+  const verified = options.reauthPassword.length > 0 && await verifyPassword(options.reauthPassword)
+  if (!verified) return { success: false, error: "Re-authentication is required to issue a certificate" }
 
   // Get equipment
   const { data: equipment } = await supabase
@@ -50,22 +64,20 @@ export async function generateCertificate(
     .limit(20)
 
   // Generate certificate number
-  const year = new Date().getFullYear()
+  const issuedAt = new Date()
+  const year = issuedAt.getFullYear()
   const { count } = await supabase
     .from("certificates")
     .select("*", { count: "exact", head: true })
 
-  const certNumber = `CERT-${year}-${String((count || 0) + 1).padStart(4, "0")}`
+  const certNumber = buildCertificateNumber(year, count || 0)
 
   // Compute audit trail hash
-  const auditHash = createHash("sha256")
-    .update(JSON.stringify({ equipment_id: equipmentId, readings, auditEntries }))
-    .digest("hex")
+  const auditHash = computeAuditTrailHash({ equipment_id: equipmentId, readings, auditEntries })
 
   // Compute valid_until based on calibration interval
   const intervalDays = equipment.calibration_interval_days || 365
-  const validUntil = new Date()
-  validUntil.setDate(validUntil.getDate() + intervalDays)
+  const validUntil = calculateCertificateValidUntil(issuedAt, intervalDays)
 
   // Generate PDF
   const pdfUrl = await generateCertificatePdf({
@@ -75,7 +87,7 @@ export async function generateCertificate(
     envReading,
     auditHash,
     issuedBy: user.full_name,
-    issuedAt: new Date().toISOString(),
+    issuedAt: issuedAt.toISOString(),
     validUntil: validUntil.toISOString(),
     intervalDays,
   })
@@ -100,14 +112,60 @@ export async function generateCertificate(
   // Update equipment status to certified
   await supabase
     .from("equipment")
-    .update({ status: "certified", last_calibrated: new Date().toISOString() })
+    .update({ status: "certified", last_calibrated: issuedAt.toISOString() })
     .eq("id", equipmentId)
 
   await logAudit("certificates", cert.id, "insert", [
     { newValue: JSON.stringify({ certificate_number: certNumber, audit_trail_hash: auditHash }) }
-  ], "Certificate auto-generated after calibration")
+  ], options.reason)
+
+  await recordSignature("certificate", cert.id, "Approved", options.reason, auditHash)
 
   return { success: true, certificateId: cert.id }
+}
+
+export async function revokeCertificate(certificateId: string, formData: FormData) {
+  const supabase = await createClient()
+  const user = await getCurrentUser()
+  if (!user) return { success: false, error: "Not authenticated" }
+  if (!await hasPermission({ action: "revoke", resource: "certificates" })) {
+    return { success: false, error: "You do not have permission to revoke certificates" }
+  }
+
+  const reason = String(formData.get("reason") || "").trim()
+  const password = String(formData.get("reauth_password") || "")
+  if (reason.length < 5) return { success: false, error: "Revocation reason is required" }
+
+  const verified = password.length > 0 && await verifyPassword(password)
+  if (!verified) return { success: false, error: "Re-authentication is required to revoke a certificate" }
+
+  const { data: cert } = await supabase
+    .from("certificates")
+    .select("id, equipment_id, audit_trail_hash")
+    .eq("id", certificateId)
+    .single()
+
+  if (!cert) return { success: false, error: "Certificate not found" }
+
+  const { data: revocation, error } = await supabase
+    .from("certificate_revocations")
+    .insert({
+      certificate_id: certificateId,
+      revoked_by: user.id,
+      reason,
+    })
+    .select("id")
+    .single()
+
+  if (error) return { success: false, error: error.message }
+
+  await logAudit("certificate_revocations", revocation.id, "insert", [
+    { newValue: JSON.stringify({ certificate_id: certificateId }) },
+  ], reason)
+
+  await recordSignature("certificate", certificateId, "Approved", reason, cert.audit_trail_hash)
+
+  return { success: true }
 }
 
 async function generateCertificatePdf(params: {

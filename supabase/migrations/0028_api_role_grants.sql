@@ -1,0 +1,26 @@
+-- Ensure Supabase API roles can access the application schema.
+-- RLS policies still control anon/authenticated row access; service_role bypasses RLS.
+
+GRANT USAGE ON SCHEMA ebiomed TO anon, authenticated, service_role;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ebiomed TO service_role;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA ebiomed TO service_role;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA ebiomed TO service_role;
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA ebiomed TO authenticated;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA ebiomed TO authenticated;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA ebiomed TO authenticated;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA ebiomed
+  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA ebiomed
+  GRANT USAGE, SELECT ON SEQUENCES TO service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA ebiomed
+  GRANT EXECUTE ON FUNCTIONS TO service_role;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA ebiomed
+  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA ebiomed
+  GRANT USAGE, SELECT ON SEQUENCES TO authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA ebiomed
+  GRANT EXECUTE ON FUNCTIONS TO authenticated;

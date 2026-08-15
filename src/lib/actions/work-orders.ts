@@ -6,38 +6,56 @@ import { createClient } from "@/lib/supabase/server"
 import { getCurrentUser } from "@/lib/actions/profiles"
 import { getViewerDepartmentIds } from "@/lib/actions/departments"
 import { logAudit } from "@/lib/actions/audit"
-import { recordSignature } from "@/lib/actions/signatures"
+import { hasPermission, requirePermission } from "@/lib/actions/permissions"
+import { recordSignature, verifyPassword } from "@/lib/actions/signatures"
+import { workOrderSchema, workOrderUpdateSchema } from "@/lib/schemas/work-order"
+import {
+  getWorkOrderCloseoutRequirements,
+  requiresWorkOrderReauth,
+  validateWorkOrderCloseout,
+  validateWorkOrderStatusTransition,
+  type WorkOrderCloseoutRequirement,
+  type WorkOrderStatus,
+} from "@/lib/utils/work-order-lifecycle"
+import { completePMOccurrenceForWorkOrder } from "@/lib/actions/pm-engine"
 import type { WorkOrder } from "@/lib/types"
+import type { WorkOrderStatusDraftPayload } from "@/lib/offline/work-order-drafts"
 
 export async function createWorkOrder(formData: FormData) {
   const supabase = await createClient()
   const user = await getCurrentUser()
   if (!user) return redirect("/login")
+  await requirePermission({ action: "write", resource: "work_orders" }, "/work-orders/new")
 
   const raw = Object.fromEntries(formData)
   if (!raw.assigned_to) delete raw.assigned_to
   const parsed = workOrderSchema.safeParse(raw)
 
   if (!parsed.success) {
-    const messages = parsed.error.errors.map((e) => e.message).join(", ")
+    const messages = parsed.error.issues.map((e) => e.message).join(", ")
     return redirect(`/work-orders/new?error=${encodeURIComponent(messages)}`)
   }
 
   // Validate equipment is not retired
   const { data: equip } = await supabase
     .from("equipment")
-    .select("status")
+    .select("status, lifecycle_stage, decommissioning_status")
     .eq("id", parsed.data.equipment_id)
     .single()
 
-  if (equip?.status === "retired") {
-    return redirect(`/work-orders/new?error=${encodeURIComponent("Cannot create work order for retired equipment")}`)
+  if (equip?.status === "retired" || equip?.lifecycle_stage === "retired" || equip?.decommissioning_status === "completed") {
+    return redirect(`/work-orders/new?error=${encodeURIComponent("Cannot create work order for retired or decommissioned equipment")}`)
   }
 
+  const { reason, ...workOrderData } = parsed.data
+  const safetyEscalation = ["high", "critical"].includes(parsed.data.patient_safety_impact)
+
   const { data, error } = await supabase.from("work_orders").insert({
-    ...parsed.data,
+    ...workOrderData,
     assigned_to: parsed.data.assigned_to || null,
     created_by: user.id,
+    safety_escalated_at: safetyEscalation ? new Date().toISOString() : null,
+    safety_escalated_by: safetyEscalation ? user.id : null,
   }).select().single()
 
   if (error) {
@@ -45,8 +63,8 @@ export async function createWorkOrder(formData: FormData) {
   }
 
   await logAudit("work_orders", data.id, "insert", [
-    { newValue: JSON.stringify({ equipment_id: parsed.data.equipment_id, type: parsed.data.type, priority: parsed.data.priority, description: parsed.data.description, assigned_to: parsed.data.assigned_to }) }
-  ], parsed.data.reason)
+    { newValue: JSON.stringify({ equipment_id: parsed.data.equipment_id, type: parsed.data.type, priority: parsed.data.priority, description: parsed.data.description, assigned_to: parsed.data.assigned_to, patient_safety_impact: parsed.data.patient_safety_impact }) }
+  ], reason)
 
   revalidatePath("/work-orders")
   revalidatePath("/dashboard")
@@ -114,8 +132,57 @@ export async function getWorkOrderById(id: string): Promise<WorkOrder | null> {
   return data as unknown as WorkOrder
 }
 
+async function getWorkOrderTimeEntryCount(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  workOrderId: string
+) {
+  const { data: jobCards } = await supabase
+    .schema("ebiomed")
+    .from("job_cards")
+    .select("id")
+    .eq("work_order_id", workOrderId)
+
+  const jobCardIds = (jobCards || []).map((jobCard) => jobCard.id)
+  if (jobCardIds.length === 0) return 0
+
+  const { count } = await supabase
+    .schema("ebiomed")
+    .from("job_card_entries")
+    .select("id", { count: "exact", head: true })
+    .in("job_card_id", jobCardIds)
+
+  return count || 0
+}
+
+export async function getWorkOrderCloseoutStatus(workOrderId: string): Promise<{
+  timeEntryCount: number
+  requirements: WorkOrderCloseoutRequirement[]
+}> {
+  const supabase = await createClient()
+  const [{ data: workOrder }, timeEntryCount] = await Promise.all([
+    supabase
+      .schema("ebiomed")
+      .from("work_orders")
+      .select("resolution_notes")
+      .eq("id", workOrderId)
+      .single(),
+    getWorkOrderTimeEntryCount(supabase, workOrderId),
+  ])
+
+  return {
+    timeEntryCount,
+    requirements: getWorkOrderCloseoutRequirements({
+      resolutionNotes: workOrder?.resolution_notes || null,
+      timeEntryCount,
+      signatureReason: null,
+      reauthVerified: false,
+    }),
+  }
+}
+
 export async function updateWorkOrderStatus(id: string, formData: FormData) {
   const supabase = await createClient()
+  await requirePermission({ action: "write", resource: "work_orders" }, `/work-orders/${id}`)
   const raw = Object.fromEntries(formData)
 
   if (!raw.assigned_to) delete raw.assigned_to
@@ -123,43 +190,69 @@ export async function updateWorkOrderStatus(id: string, formData: FormData) {
   // Fetch current status to enforce lifecycle rules
   const { data: current } = await supabase
     .from("work_orders")
-    .select("status, started_at")
+    .select("status, started_at, resolution_notes, patient_safety_impact, safety_escalated_at")
     .eq("id", id)
     .single()
 
   if (!current) return redirect(`/work-orders/${id}?error=${encodeURIComponent("Work order not found")}`)
 
-  const newStatus = raw.status as string
+  const newStatus = raw.status as WorkOrderStatus | undefined
 
-  // Completed or cancelled = immutable
-  if (current.status === "completed" || current.status === "cancelled") {
-    return redirect(`/work-orders/${id}?error=${encodeURIComponent("Cannot modify a completed or cancelled work order")}`)
-  }
-
-  // Prevent invalid transitions
-  const validTransitions: Record<string, string[]> = {
-    open: ["in_progress", "on_hold", "cancelled"],
-    in_progress: ["on_hold", "completed", "cancelled"],
-    on_hold: ["in_progress", "cancelled"],
-  }
-
-  if (newStatus && !validTransitions[current.status]?.includes(newStatus)) {
-    return redirect(`/work-orders/${id}?error=${encodeURIComponent(`Invalid status transition from ${current.status} to ${newStatus}`)}`)
+  const transition = validateWorkOrderStatusTransition(current.status as WorkOrderStatus, newStatus)
+  if (!transition.valid) {
+    return redirect(`/work-orders/${id}?error=${encodeURIComponent(transition.message)}`)
   }
 
   const parsed = workOrderUpdateSchema.safeParse(raw)
   if (!parsed.success) {
-    const messages = parsed.error.errors.map((e) => e.message).join(", ")
+    const messages = parsed.error.issues.map((e) => e.message).join(", ")
     return redirect(`/work-orders/${id}?error=${encodeURIComponent(messages)}`)
   }
 
-  const updateData: Record<string, unknown> = { ...parsed.data }
+  if (parsed.data.status === "completed") {
+    await requirePermission({ action: "close", resource: "work_orders" }, `/work-orders/${id}`)
+  }
+  if (parsed.data.status === "cancelled") {
+    await requirePermission({ action: "cancel", resource: "work_orders" }, `/work-orders/${id}`)
+  }
+
+  let reauthVerified = false
+  if (requiresWorkOrderReauth(parsed.data.status)) {
+    const password = String(raw.reauth_password || "")
+    reauthVerified = password.length > 0 && await verifyPassword(password)
+    if (!reauthVerified) {
+      return redirect(`/work-orders/${id}?error=${encodeURIComponent("Re-authentication is required to complete or cancel a work order")}`)
+    }
+  }
+
+  const { reason, ...workOrderUpdateData } = parsed.data
+  const updateData: Record<string, unknown> = { ...workOrderUpdateData }
+  const safetyImpact = parsed.data.patient_safety_impact || current.patient_safety_impact
+  if (["high", "critical"].includes(safetyImpact) && !current.safety_escalated_at) {
+    const user = await getCurrentUser()
+    updateData.safety_escalated_at = new Date().toISOString()
+    updateData.safety_escalated_by = user?.id || null
+  }
 
   if (parsed.data.status === "in_progress") {
     updateData.started_at = new Date().toISOString()
   }
 
   if (parsed.data.status === "completed") {
+    const finalResolutionNotes = parsed.data.resolution_notes ?? current.resolution_notes
+    const timeEntryCount = await getWorkOrderTimeEntryCount(supabase, id)
+    const closeout = validateWorkOrderCloseout({
+      resolutionNotes: finalResolutionNotes,
+      timeEntryCount,
+      signatureReason: reason,
+      reauthVerified,
+    })
+
+    if (!closeout.valid) {
+      return redirect(`/work-orders/${id}?error=${encodeURIComponent(closeout.messages.join(" "))}`)
+    }
+
+    updateData.resolution_notes = finalResolutionNotes?.trim()
     updateData.completed_at = new Date().toISOString()
 
     // Calculate downtime
@@ -180,7 +273,7 @@ export async function updateWorkOrderStatus(id: string, formData: FormData) {
     return redirect(`/work-orders/${id}?error=${encodeURIComponent(error.message)}`)
   }
 
-  const statusReason = parsed.data.reason || "Status change"
+  const statusReason = reason || "Status change"
   await logAudit("work_orders", id, "update", [
     { field: "status", oldValue: current.status, newValue: newStatus }
   ], statusReason)
@@ -190,12 +283,15 @@ export async function updateWorkOrderStatus(id: string, formData: FormData) {
     await recordSignature(
       "work_order",
       id,
-      parsed.data.status === "completed" ? "Verified" : "Reviewed"
+      parsed.data.status === "completed" ? "Verified" : "Reviewed",
+      statusReason
     )
   }
 
   // If completed, update equipment status back to active
   if (parsed.data.status === "completed") {
+    await completePMOccurrenceForWorkOrder(id, updateData.completed_at as string)
+
     const { data: wo } = await supabase
       .from("work_orders")
       .select("equipment_id")
@@ -244,6 +340,93 @@ export async function updateWorkOrderStatus(id: string, formData: FormData) {
   revalidatePath(`/work-orders/${id}`)
   revalidatePath("/dashboard")
   redirect(`/work-orders/${id}`)
+}
+
+export async function syncOfflineWorkOrderStatusDraft(payload: WorkOrderStatusDraftPayload): Promise<{
+  ok: boolean
+  error?: string
+}> {
+  const supabase = await createClient()
+  const user = await getCurrentUser()
+  if (!user) return { ok: false, error: "Login is required before syncing this draft." }
+  if (!(await hasPermission({ action: "write", resource: "work_orders" }))) {
+    return { ok: false, error: "You do not have permission for that action." }
+  }
+
+  if (payload.status === "completed" || payload.status === "cancelled") {
+    return {
+      ok: false,
+      error: "Completion and cancellation drafts require interactive re-authentication before sync.",
+    }
+  }
+
+  const { data: current } = await supabase
+    .schema("ebiomed")
+    .from("work_orders")
+    .select("status, assigned_to, equipment_id")
+    .eq("id", payload.workOrderId)
+    .single()
+
+  if (!current) return { ok: false, error: "Work order no longer exists." }
+  if (current.status === "completed" || current.status === "cancelled") {
+    return { ok: false, error: "Work order was already closed before this draft synced." }
+  }
+  if ((current.assigned_to || null) !== payload.originalAssignedTo) {
+    return { ok: false, error: "Work order assignment changed before this draft synced." }
+  }
+
+  const transition = validateWorkOrderStatusTransition(current.status as WorkOrderStatus, payload.status as WorkOrderStatus)
+  if (!transition.valid) return { ok: false, error: transition.message }
+
+  const parsed = workOrderUpdateSchema.safeParse({
+    status: payload.status,
+    assigned_to: payload.assignedTo || undefined,
+    resolution_notes: payload.resolutionNotes || undefined,
+    reason: payload.reason,
+  })
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues.map((issue) => issue.message).join(", ") }
+  }
+
+  const { reason, ...workOrderUpdateData } = parsed.data
+  const updateData: Record<string, unknown> = { ...workOrderUpdateData }
+  if (parsed.data.status === "in_progress") updateData.started_at = new Date().toISOString()
+
+  const { error } = await supabase
+    .schema("ebiomed")
+    .from("work_orders")
+    .update(updateData)
+    .eq("id", payload.workOrderId)
+
+  if (error) return { ok: false, error: error.message }
+
+  await logAudit("work_orders", payload.workOrderId, "update", [
+    { field: "status", oldValue: current.status, newValue: parsed.data.status },
+  ], reason)
+
+  if (parsed.data.status === "in_progress") {
+    const { data: equip } = await supabase
+      .schema("ebiomed")
+      .from("equipment")
+      .select("status")
+      .eq("id", current.equipment_id)
+      .single()
+
+    await supabase
+      .schema("ebiomed")
+      .from("equipment")
+      .update({ status: "under_repair", updated_at: new Date().toISOString() })
+      .eq("id", current.equipment_id)
+
+    await logAudit("equipment", current.equipment_id, "update", [
+      { field: "status", oldValue: equip?.status || "unknown", newValue: "under_repair" },
+    ], reason)
+  }
+
+  revalidatePath("/work-orders")
+  revalidatePath(`/work-orders/${payload.workOrderId}`)
+  revalidatePath("/dashboard")
+  return { ok: true }
 }
 
 export async function getAssignedWorkOrders(userId: string): Promise<WorkOrder[]> {

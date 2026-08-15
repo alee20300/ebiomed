@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { verifyApiKey, extractApiKey } from "@/lib/api/auth"
+import { requireApiScope } from "@/lib/api/auth"
+import { buildTelemetryUpdates } from "@/lib/utils/telemetry"
 
 export async function POST(request: Request) {
-  const key = extractApiKey(request)
-  const { valid } = await verifyApiKey(key || "")
-  if (!valid) {
+  const auth = await requireApiScope(request, "write", "telemetry")
+  if (!auth) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
@@ -22,17 +22,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "equipment_id is required" }, { status: 400 })
   }
 
-  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
-
-  if (body.run_hours !== undefined) {
-    updates.run_hours = body.run_hours
-  }
-  if (body.cycle_count !== undefined) {
-    updates.cycle_count = body.cycle_count
-  }
-  if (body.temperature_celsius !== undefined) {
-    updates.last_telemetry_temp = body.temperature_celsius
-  }
+  const updates = buildTelemetryUpdates(body, new Date().toISOString())
 
   if (Object.keys(updates).length <= 1) {
     return NextResponse.json({ error: "No valid telemetry fields provided" }, { status: 400 })

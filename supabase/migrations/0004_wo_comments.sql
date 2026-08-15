@@ -1,7 +1,7 @@
 CREATE TABLE ebiomed.wo_comments (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   work_order_id UUID NOT NULL REFERENCES ebiomed.work_orders(id) ON DELETE CASCADE,
-  author_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  author_id UUID NOT NULL REFERENCES ebiomed.profiles(id) ON DELETE CASCADE,
   text TEXT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT now() NOT NULL
 );
