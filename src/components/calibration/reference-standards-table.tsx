@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,7 +11,9 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { ReasonForChange } from "@/components/shared/reason-for-change"
+import { ListControls, matchesQuery, paginate } from "@/components/shared/list-controls"
 import { createReferenceStandard, updateReferenceStandard, deleteReferenceStandard } from "@/lib/actions/calibration"
+import { statusColor } from "@/lib/utils/format"
 import { Plus, Edit, Trash2, AlertTriangle } from "lucide-react"
 import { format, isPast, parseISO } from "date-fns"
 import { cn } from "@/lib/utils"
@@ -25,6 +27,34 @@ export function ReferenceStandardsTable({ standards }: Props) {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<ReferenceStandard | null>(null)
   const [reason, setReason] = useState("")
+  const pageSize = 15
+  const [filter, setFilter] = useState("all")
+  const [query, setQuery] = useState("")
+  const [page, setPage] = useState(1)
+  const filteredStandards = useMemo(() => standards.filter((std) => {
+    const isExpired = isPast(parseISO(std.certificate_expiry))
+    const effectiveStatus = isExpired && std.status === "active" ? "expired" : std.status
+    const matchesFilter =
+      filter === "all" ||
+      effectiveStatus === filter
+
+    return matchesFilter && matchesQuery([
+      std.serial_number,
+      std.name,
+      std.certificate_number,
+      std.manufacturer,
+      std.model,
+      std.location,
+      std.notes,
+    ], query)
+  }), [filter, query, standards])
+  const pageData = paginate(filteredStandards, page, pageSize)
+  const filters = [
+    { value: "all", label: "All" },
+    { value: "active", label: "Active" },
+    { value: "expired", label: "Expired" },
+    { value: "inactive", label: "Inactive" },
+  ]
 
   return (
     <div className="space-y-4">
@@ -37,6 +67,22 @@ export function ReferenceStandardsTable({ standards }: Props) {
           </Button>
         </form>
       </div>
+
+      {standards.length > 0 && (
+        <ListControls
+          filters={filters}
+          activeFilter={filter}
+          onFilterChange={setFilter}
+          query={query}
+          onQueryChange={setQuery}
+          searchPlaceholder="Search standards"
+          page={pageData.page}
+          totalPages={pageData.totalPages}
+          totalItems={filteredStandards.length}
+          pageSize={pageSize}
+          onPageChange={setPage}
+        />
+      )}
 
       {standards.length === 0 ? (
         <p className="py-8 text-center text-sm text-muted-foreground">No reference standards configured.</p>
@@ -55,7 +101,7 @@ export function ReferenceStandardsTable({ standards }: Props) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {standards.map((std) => {
+              {pageData.items.map((std) => {
                 const isExpired = isPast(parseISO(std.certificate_expiry))
                 const status = isExpired && std.status === "active" ? "expired" : std.status
                 return (
@@ -70,9 +116,7 @@ export function ReferenceStandardsTable({ standards }: Props) {
                     <TableCell>
                       <Badge variant="outline" className={cn(
                         "text-xs capitalize",
-                        status === "active" && "bg-green-100 text-green-800",
-                        status === "expired" && "bg-red-100 text-red-800",
-                        status === "retired" && "bg-gray-100 text-gray-800",
+                        statusColor(status),
                       )}>
                         {status}
                       </Badge>

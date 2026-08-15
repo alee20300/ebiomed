@@ -12,6 +12,7 @@ import { ChevronLeft, ChevronRight, Download } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { getAuditLog, exportAuditLog } from "@/lib/actions/audit"
+import { statusColor } from "@/lib/utils/format"
 
 interface AuditEntry {
   id: string
@@ -27,12 +28,6 @@ interface AuditEntry {
   profile?: { full_name: string; role: string } | null
 }
 
-const actionColors: Record<string, string> = {
-  insert: "bg-green-100 text-green-800 border-green-200",
-  update: "bg-blue-100 text-blue-800 border-blue-200",
-  delete: "bg-red-100 text-red-800 border-red-200",
-}
-
 const PAGE_SIZE = 25
 
 export function AuditLogTable() {
@@ -44,12 +39,14 @@ export function AuditLogTable() {
   const [actionFilter, setActionFilter] = useState("")
   const [recordFilter, setRecordFilter] = useState("")
 
-  const handleTableFilterChange = useCallback((v: string) => {
+  const handleTableFilterChange = useCallback((v: string | null) => {
+    if (!v) return
     setTableFilter(v === "all" ? "" : v)
     setOffset(0)
   }, [])
 
-  const handleActionFilterChange = useCallback((v: string) => {
+  const handleActionFilterChange = useCallback((v: string | null) => {
+    if (!v) return
     setActionFilter(v === "all" ? "" : v)
     setOffset(0)
   }, [])
@@ -192,7 +189,7 @@ export function AuditLogTable() {
                           variant="outline"
                           className={cn(
                             "text-xs capitalize",
-                            actionColors[entry.action] || ""
+                            statusColor(entry.action)
                           )}
                         >
                           {entry.action}
@@ -205,13 +202,13 @@ export function AuditLogTable() {
                         {entry.old_value || entry.new_value ? (
                           <div className="max-w-[200px] truncate">
                             {entry.old_value && (
-                              <span className="text-red-600 line-through">{truncate(entry.old_value, 50)}</span>
+                              <span className="text-danger-strong line-through">{truncate(entry.old_value, 50)}</span>
                             )}
                             {entry.old_value && entry.new_value && (
                               <span className="mx-1 text-muted-foreground">→</span>
                             )}
                             {entry.new_value && (
-                              <span className="text-green-600">{truncate(entry.new_value, 50)}</span>
+                              <span className="text-success-strong">{truncate(entry.new_value, 50)}</span>
                             )}
                           </div>
                         ) : (

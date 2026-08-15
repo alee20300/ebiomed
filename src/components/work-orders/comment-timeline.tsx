@@ -38,7 +38,7 @@ export function CommentTimeline({ workOrderId }: Props) {
       </h4>
 
       {error && (
-        <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+        <div className="flex items-center gap-2 rounded-md border border-danger bg-danger-subtle p-3 text-sm text-danger-strong">
           <AlertCircle className="h-4 w-4" />
           {error}
         </div>

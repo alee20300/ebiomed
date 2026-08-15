@@ -18,7 +18,7 @@ export function ComplianceChart({ completed, total }: Props) {
 
   if (total === 0) {
     return (
-      <div className="flex h-48 items-center justify-center text-sm text-gray-500">
+      <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
         No PM schedules defined yet.
       </div>
     )

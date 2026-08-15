@@ -24,29 +24,83 @@ export function getPMStatus(nextDue: string | null): "overdue" | "due" | "upcomi
   return "none"
 }
 
+/**
+ * The five semantic tones every status and priority in the app collapses into.
+ * Adding a colour outside this set is a design-system change, not a local one.
+ */
+export type Tone = "success" | "warning" | "danger" | "info" | "neutral"
+
+const TONE_CLASSES: Record<Tone, string> = {
+  success: "bg-success-subtle text-success-strong",
+  warning: "bg-warning-subtle text-warning-strong",
+  danger: "bg-danger-subtle text-danger-strong",
+  info: "bg-info-subtle text-info-strong",
+  neutral: "bg-neutral-subtle text-neutral-strong",
+}
+
+const STATUS_TONES: Record<string, Tone> = {
+  // work orders
+  open: "info",
+  in_progress: "warning",
+  on_hold: "warning",
+  completed: "success",
+  cancelled: "neutral",
+  // complaints / requests
+  new: "warning",
+  pending_review: "warning",
+  "pending review": "warning",
+  triaged: "info",
+  approved: "success",
+  rejected: "danger",
+  converted: "info",
+  "converted to work order": "info",
+  // equipment
+  active: "success",
+  inactive: "neutral",
+  retired: "danger",
+  under_repair: "warning",
+  // calibration
+  valid: "success",
+  expired: "danger",
+  revoked: "neutral",
+  out_of_tolerance: "danger",
+  certified: "success",
+  // preventive maintenance
+  overdue: "danger",
+  due: "warning",
+  upcoming: "info",
+  none: "neutral",
+  // inventory / audit
+  ok: "success",
+  low_stock: "danger",
+  insert: "success",
+  update: "info",
+  delete: "danger",
+}
+
+const PRIORITY_TONES: Record<string, Tone> = {
+  low: "neutral",
+  medium: "info",
+  high: "warning",
+  critical: "danger",
+}
+
+export function statusTone(status: string): Tone {
+  return STATUS_TONES[status] ?? "neutral"
+}
+
+export function priorityTone(priority: string): Tone {
+  return PRIORITY_TONES[priority] ?? "neutral"
+}
+
+export function toneClasses(tone: Tone): string {
+  return TONE_CLASSES[tone]
+}
+
 export function statusColor(status: string): string {
-  switch (status) {
-    case "open": return "bg-blue-100 text-blue-800"
-    case "in_progress": return "bg-yellow-100 text-yellow-800"
-    case "on_hold": return "bg-orange-100 text-orange-800"
-    case "completed": return "bg-green-100 text-green-800"
-    case "cancelled": return "bg-gray-100 text-gray-800"
-    case "active": return "bg-green-100 text-green-800"
-    case "inactive": return "bg-gray-100 text-gray-800"
-    case "retired": return "bg-red-100 text-red-800"
-    case "under_repair": return "bg-purple-100 text-purple-800"
-    case "out_of_tolerance": return "bg-red-100 text-red-800"
-    case "certified": return "bg-emerald-100 text-emerald-800"
-    default: return "bg-gray-100 text-gray-800"
-  }
+  return toneClasses(statusTone(status))
 }
 
 export function priorityColor(priority: string): string {
-  switch (priority) {
-    case "low": return "bg-gray-100 text-gray-700"
-    case "medium": return "bg-blue-100 text-blue-700"
-    case "high": return "bg-orange-100 text-orange-700"
-    case "critical": return "bg-red-100 text-red-700"
-    default: return "bg-gray-100 text-gray-700"
-  }
+  return toneClasses(priorityTone(priority))
 }

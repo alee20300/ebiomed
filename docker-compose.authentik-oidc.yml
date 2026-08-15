@@ -1,0 +1,17 @@
+services:
+  authentik-supabase-proxy:
+    image: nginx:1.29-alpine
+    container_name: ebiomed-authentik-supabase-proxy
+    network_mode: "container:supabase_auth_eBiomed"
+    volumes:
+      - ./supabase/authentik-local-proxy.conf:/etc/nginx/nginx.conf:ro
+    restart: unless-stopped
+
+  authentik-browser-proxy:
+    image: nginx:1.29-alpine
+    container_name: ebiomed-authentik-browser-proxy
+    ports:
+      - "9003:9003"
+    volumes:
+      - ./supabase/authentik-local-proxy.conf:/etc/nginx/nginx.conf:ro
+    restart: unless-stopped

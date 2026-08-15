@@ -17,11 +17,11 @@ const badgeVariants = cva(
         outline:
           "border-border text-foreground [a]:hover:bg-background [a]:hover:text-foreground",
         success:
-          "bg-[oklch(58%_0.16_145)]/10 text-[oklch(40%_0.15_145)] [a]:hover:bg-[oklch(58%_0.16_145)]/20",
+          "bg-success-subtle text-success-strong [a]:hover:bg-success-subtle/80",
         warning:
-          "bg-[oklch(75%_0.18_85)]/10 text-[oklch(50%_0.18_85)] [a]:hover:bg-[oklch(75%_0.18_85)]/20",
+          "bg-warning-subtle text-warning-strong [a]:hover:bg-warning-subtle/80",
         info:
-          "bg-[oklch(70%_0.15_230)]/10 text-[oklch(50%_0.15_230)] [a]:hover:bg-[oklch(70%_0.15_230)]/20",
+          "bg-info-subtle text-info-strong [a]:hover:bg-info-subtle/80",
       },
     },
     defaultVariants: {

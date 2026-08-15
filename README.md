@@ -1,5 +1,26 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Local Authentik sign-in
+
+The local app uses the existing Authentik instance on port `9001` and exposes
+its OIDC bridge to LAN devices on port `9003`. OIDC credentials are stored only
+in the ignored `.env.local` file. `AUTHENTIK_BROWSER_URL` in that file must use
+the Mac's current LAN address when the address changes.
+
+Start Supabase with those credentials loaded, then start both bridge containers:
+
+```bash
+set -a
+. ./.env.local
+set +a
+npx supabase start
+docker compose -f docker-compose.authentik-oidc.yml up -d --force-recreate
+npx supabase migration up --local
+```
+
+Run the web app on the LAN with `npm run dev -- --hostname 0.0.0.0 --port 3002`,
+then open `http://192.168.1.6:3002/login` and choose **Continue with Authentik**.
+
 ## Getting Started
 
 First, run the development server:

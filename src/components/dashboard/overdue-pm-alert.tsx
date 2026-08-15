@@ -13,24 +13,24 @@ export function OverduePMAlert({ schedules }: Props) {
   if (overdue.length === 0) return null
 
   return (
-    <div className="rounded-lg border border-red-200 bg-red-50">
-      <div className="flex items-center gap-2 border-b border-red-200 px-6 py-3">
-        <AlertTriangle className="h-5 w-5 text-red-600" />
-        <h3 className="font-semibold text-red-800">
+    <div className="rounded-lg border border-danger bg-danger-subtle">
+      <div className="flex items-center gap-2 border-b border-danger/40 px-4 py-2.5">
+        <AlertTriangle className="h-4 w-4 text-danger-strong" />
+        <h3 className="text-sm font-semibold text-danger-strong">
           {overdue.length} Overdue PM{overdue.length > 1 ? "s" : ""}
         </h3>
       </div>
-      <div className="divide-y divide-red-100">
+      <div className="divide-y divide-danger/20">
         {overdue.map((pm) => (
           <Link
             key={pm.id}
             href={`/pm-schedules/${pm.id}`}
-            className="flex items-center justify-between px-6 py-3 hover:bg-red-100"
+            className="flex items-center justify-between gap-3 px-4 py-2 hover:bg-danger/10"
           >
-            <span className="text-sm font-medium text-red-700">
+            <span className="truncate text-sm font-medium text-danger-strong">
               {pm.equipment?.name || "Unknown"}
             </span>
-            <span className="text-xs text-red-500">
+            <span className="shrink-0 text-xs text-danger-strong">
               Due: {formatDate(pm.next_due)}
             </span>
           </Link>

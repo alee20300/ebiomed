@@ -35,7 +35,7 @@ export async function addDepartment(formData: FormData) {
   const parsed = departmentSchema.safeParse(raw)
 
   if (!parsed.success) {
-    const messages = parsed.error.errors.map((e) => e.message).join(", ")
+    const messages = parsed.error.issues.map((e) => e.message).join(", ")
     return redirect(`/settings?error=${encodeURIComponent(messages)}`)
   }
 
@@ -113,7 +113,7 @@ export async function saveViewerDepartments(formData: FormData) {
   const parsed = viewerDepartmentsSchema.safeParse({ viewer_id, department_ids })
 
   if (!parsed.success) {
-    const messages = parsed.error.errors.map((e) => e.message).join(", ")
+    const messages = parsed.error.issues.map((e) => e.message).join(", ")
     return redirect(`/settings?error=${encodeURIComponent(messages)}`)
   }
 

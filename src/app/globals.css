@@ -27,6 +27,20 @@
   --color-input: var(--input);
   --color-border: var(--border);
   --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-success-subtle: var(--success-subtle);
+  --color-success-strong: var(--success-strong);
+  --color-warning: var(--warning);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-warning-strong: var(--warning-strong);
+  --color-danger: var(--danger);
+  --color-danger-subtle: var(--danger-subtle);
+  --color-danger-strong: var(--danger-strong);
+  --color-info: var(--info);
+  --color-info-subtle: var(--info-subtle);
+  --color-info-strong: var(--info-strong);
+  --color-neutral-subtle: var(--neutral-subtle);
+  --color-neutral-strong: var(--neutral-strong);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -82,6 +96,25 @@
   --sidebar-accent-foreground: oklch(22% 0.02 240);
   --sidebar-border: oklch(90% 0.008 240);
   --sidebar-ring: #2563eb;
+
+  /* Semantic status scale. Each family has three roles:
+     base   — solid fills, icons, chart marks
+     subtle — badge/alert backgrounds
+     strong — text and icons sitting on `subtle` (>= 4.5:1) */
+  --success: oklch(58% 0.16 145);
+  --success-subtle: oklch(96% 0.03 145);
+  --success-strong: oklch(40% 0.13 145);
+  --warning: oklch(75% 0.18 85);
+  --warning-subtle: oklch(96% 0.05 85);
+  --warning-strong: oklch(45% 0.12 85);
+  --danger: oklch(65% 0.22 25);
+  --danger-subtle: oklch(96% 0.03 25);
+  --danger-strong: oklch(45% 0.18 25);
+  --info: oklch(70% 0.15 230);
+  --info-subtle: oklch(96% 0.03 230);
+  --info-strong: oklch(45% 0.15 230);
+  --neutral-subtle: oklch(96% 0 0);
+  --neutral-strong: oklch(40% 0.01 240);
 }
 
 .dark {
@@ -117,6 +150,23 @@
   --sidebar-accent-foreground: oklch(98% 0.005 250);
   --sidebar-border: oklch(30% 0.02 240);
   --sidebar-ring: #3b82f6;
+
+  /* Dark theme inverts the subtle/strong relationship: dim tinted fills
+     carrying light tinted text, same >= 4.5:1 target. */
+  --success: oklch(65% 0.15 145);
+  --success-subtle: oklch(28% 0.05 145);
+  --success-strong: oklch(82% 0.13 145);
+  --warning: oklch(78% 0.16 85);
+  --warning-subtle: oklch(30% 0.05 85);
+  --warning-strong: oklch(85% 0.14 85);
+  --danger: oklch(70% 0.19 25);
+  --danger-subtle: oklch(30% 0.07 25);
+  --danger-strong: oklch(82% 0.13 25);
+  --info: oklch(72% 0.14 230);
+  --info-subtle: oklch(30% 0.06 230);
+  --info-strong: oklch(84% 0.11 230);
+  --neutral-subtle: oklch(28% 0.02 240);
+  --neutral-strong: oklch(80% 0.02 240);
 }
 
 @layer base {

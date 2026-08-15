@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { createWorkOrder } from "@/lib/actions/work-orders"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
@@ -36,7 +35,7 @@ export function WorkOrderForm({ preselectedEquipmentId }: { preselectedEquipment
       .select("id, full_name, role")
       .in("role", ["technician", "admin"])
       .order("full_name")
-      .then(({ data }) => setTechnicians((data as any) || []))
+      .then(({ data }) => setTechnicians((data as Array<{ id: string; full_name: string; role: string }> | null) || []))
   }, [supabase])
 
   return (

@@ -15,9 +15,9 @@ async function ChecklistContent({ tag }: { tag: string }) {
 
   if (!equipment) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center">
-        <p className="font-medium text-red-800">Equipment not found</p>
-        <p className="mt-1 text-sm text-red-600">No equipment with tag &quot;{tag}&quot; exists.</p>
+      <div className="rounded-lg border border-danger bg-danger-subtle p-6 text-center">
+        <p className="font-medium text-danger-strong">Equipment not found</p>
+        <p className="mt-1 text-sm text-danger-strong">No equipment with tag &quot;{tag}&quot; exists.</p>
         <Link href="/report" className="mt-4 inline-block text-sm text-primary hover:underline">
           Scan another
         </Link>
@@ -30,8 +30,8 @@ async function ChecklistContent({ tag }: { tag: string }) {
   if (templates.length === 0) {
     return (
       <div className="rounded-lg border bg-white p-6 text-center">
-        <p className="font-medium text-gray-800">No Checklists Available</p>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="font-medium text-foreground">No Checklists Available</p>
+        <p className="mt-1 text-sm text-muted-foreground">
           No checklists have been configured for {equipment.name}. Please contact the biomedical department.
         </p>
         <Link href={`/report?tag=${tag}`} className="mt-4 inline-block text-sm text-primary hover:underline">
@@ -45,17 +45,17 @@ async function ChecklistContent({ tag }: { tag: string }) {
     <div className="rounded-lg border bg-white p-6">
       <div className="mb-6 text-center">
         <p className="font-semibold text-lg">{equipment.name}</p>
-        <p className="text-sm text-gray-500">Tag: {equipment.tag_number}</p>
-        <p className="text-xs text-gray-400">{equipment.department} — {equipment.location}</p>
+        <p className="text-sm text-muted-foreground">Tag: {equipment.tag_number}</p>
+        <p className="text-xs text-muted-foreground">{equipment.department} — {equipment.location}</p>
       </div>
 
       <div className="space-y-4">
         {templates.map((tpl) => (
-          <details key={tpl.id} className="group rounded-lg border bg-gray-50">
+          <details key={tpl.id} className="group rounded-lg border bg-muted">
             <summary className="flex cursor-pointer items-center gap-2 p-3 text-sm font-medium">
               <span className="text-primary">▸</span>
               <span>{tpl.name}</span>
-              <span className="ml-auto text-xs text-gray-400 capitalize">{tpl.frequency}</span>
+              <span className="ml-auto text-xs text-muted-foreground capitalize">{tpl.frequency}</span>
             </summary>
             <div className="border-t p-4">
               <ChecklistForm
@@ -78,15 +78,15 @@ export default async function ChecklistPage({ searchParams }: PageProps) {
   const error = params.error
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-muted">
       <div className="mx-auto max-w-lg px-4 py-8">
         <div className="mb-6 text-center">
           <Link href="/report" className="text-2xl font-bold text-primary">eBiomed</Link>
-          <p className="mt-1 text-sm text-gray-500">Equipment Checklist</p>
+          <p className="mt-1 text-sm text-muted-foreground">Equipment Checklist</p>
         </div>
 
         {error && (
-          <div className="mb-4 flex items-center gap-2 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+          <div className="mb-4 flex items-center gap-2 rounded-md border border-danger bg-danger-subtle p-3 text-sm text-danger-strong">
             <AlertCircle className="h-4 w-4" />
             {error}
           </div>
@@ -94,7 +94,7 @@ export default async function ChecklistPage({ searchParams }: PageProps) {
 
         {!tag ? (
           <div className="rounded-lg border bg-white p-6 text-center">
-            <p className="text-sm text-gray-500">Scan the QR code on the equipment label to access its checklist.</p>
+            <p className="text-sm text-muted-foreground">Scan the QR code on the equipment label to access its checklist.</p>
             <Link href="/report" className="mt-4 inline-block text-sm text-primary hover:underline">
               Report a fault instead
             </Link>

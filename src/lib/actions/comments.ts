@@ -17,7 +17,7 @@ export async function addComment(formData: FormData) {
 
   const parsed = commentSchema.safeParse(raw)
   if (!parsed.success) {
-    const messages = parsed.error.errors.map((e) => e.message).join(", ")
+    const messages = parsed.error.issues.map((e) => e.message).join(", ")
     return redirect(`/work-orders/${raw.work_order_id}?error=${encodeURIComponent(messages)}`)
   }
 

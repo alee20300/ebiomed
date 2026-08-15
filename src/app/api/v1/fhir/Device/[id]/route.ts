@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import { verifyApiKey, extractApiKey } from "@/lib/api/auth"
+import { requireApiScope } from "@/lib/api/auth"
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const key = extractApiKey(request)
-  const { valid } = await verifyApiKey(key || "")
-  if (!valid) {
+  const auth = await requireApiScope(request, "read", "fhir")
+  if (!auth) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 

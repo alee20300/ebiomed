@@ -2,9 +2,10 @@
 
 import { useState } from "react"
 import { createClient } from "@/lib/supabase/client"
-import { getPMStatus, formatDate } from "@/lib/utils/format"
+import { getPMStatus, formatDate, statusColor } from "@/lib/utils/format"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { startPMTask } from "@/lib/actions/pm-schedules"
 import type { PMSchedule, ChecklistItem } from "@/lib/types"
 
@@ -38,35 +39,25 @@ export function PMDetailCard({ pmSchedule }: Props) {
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <p className="text-sm font-medium text-gray-500">Equipment</p>
+          <p className="text-sm font-medium text-muted-foreground">Equipment</p>
           <p>{pmSchedule.equipment?.name || "Unknown"}</p>
-          <p className="text-xs text-gray-400">{pmSchedule.equipment?.tag_number}</p>
+          <p className="text-xs text-muted-foreground">{pmSchedule.equipment?.tag_number}</p>
         </div>
         <div>
-          <p className="text-sm font-medium text-gray-500">Frequency</p>
+          <p className="text-sm font-medium text-muted-foreground">Frequency</p>
           <p>Every {pmSchedule.frequency_days} days</p>
         </div>
         <div>
-          <p className="text-sm font-medium text-gray-500">Last Completed</p>
+          <p className="text-sm font-medium text-muted-foreground">Last Completed</p>
           <p>{formatDate(pmSchedule.last_completed)}</p>
         </div>
         <div>
-          <p className="text-sm font-medium text-gray-500">Next Due</p>
+          <p className="text-sm font-medium text-muted-foreground">Next Due</p>
           <p>{formatDate(pmSchedule.next_due)}</p>
         </div>
         <div>
-          <p className="text-sm font-medium text-gray-500">Status</p>
-          <span
-            className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-              status === "overdue"
-                ? "bg-red-100 text-red-800"
-                : status === "due"
-                ? "bg-yellow-100 text-yellow-800"
-                : status === "upcoming"
-                ? "bg-blue-100 text-blue-800"
-                : "bg-gray-100 text-gray-800"
-            }`}
-          >
+          <p className="text-sm font-medium text-muted-foreground">Status</p>
+          <Badge className={statusColor(status)}>
             {status === "overdue"
               ? "Overdue"
               : status === "due"
@@ -74,28 +65,28 @@ export function PMDetailCard({ pmSchedule }: Props) {
               : status === "upcoming"
               ? "Upcoming"
               : "OK"}
-          </span>
+          </Badge>
         </div>
         <div>
-          <p className="text-sm font-medium text-gray-500">Active</p>
+          <p className="text-sm font-medium text-muted-foreground">Active</p>
           <p>{pmSchedule.active ? "Yes" : "No"}</p>
         </div>
       </div>
 
       {pmSchedule.description && (
         <div>
-          <p className="text-sm font-medium text-gray-500">Description</p>
+          <p className="text-sm font-medium text-muted-foreground">Description</p>
           <p className="whitespace-pre-wrap">{pmSchedule.description}</p>
         </div>
       )}
 
       <div>
         <div className="mb-2 flex items-center justify-between">
-          <p className="text-sm font-medium text-gray-500">Checklist</p>
+          <p className="text-sm font-medium text-muted-foreground">Checklist</p>
           {saving && <span className="text-xs text-muted-foreground">Saving...</span>}
         </div>
         {checklist.length === 0 ? (
-          <p className="text-sm text-gray-400">No checklist items.</p>
+          <p className="text-sm text-muted-foreground">No checklist items.</p>
         ) : (
           <div className="space-y-2">
             {checklist.map((item, index) => (
@@ -107,7 +98,7 @@ export function PMDetailCard({ pmSchedule }: Props) {
                 />
                 <label
                   htmlFor={`checklist-${item.id}`}
-                  className={`text-sm ${item.completed ? "line-through text-gray-400" : ""}`}
+                  className={`text-sm ${item.completed ? "line-through text-muted-foreground" : ""}`}
                 >
                   {item.text}
                 </label>

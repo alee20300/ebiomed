@@ -87,9 +87,15 @@ export async function submitChecklist(formData: FormData) {
       .eq("id", equipmentId)
       .single()
 
-    const { data: template } = templateId
-      ? await supabase.from("checklist_templates").select("name").eq("id", templateId).single()
-      : null
+    let template: { name: string } | null = null
+    if (templateId) {
+      const { data } = await supabase
+        .from("checklist_templates")
+        .select("name")
+        .eq("id", templateId)
+        .single()
+      template = data
+    }
 
     const failedList = failedItems.map((i) => `- ${i.text}`).join("\n")
     const templateLabel = template ? ` (${template.name})` : ""

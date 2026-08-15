@@ -105,9 +105,18 @@ export function ScheduleModal({ open, onClose }: { open: boolean; onClose: () =>
     const form = new FormData()
     form.set("equipment_id", equipmentId)
     form.set("frequency_days", String(getFrequencyDays(frequency)))
+    form.set("calendar_interval_days", String(getFrequencyDays(frequency)))
+    form.set("first_due_date", firstDueDate)
+    form.set("trigger_type", "calendar")
+    form.set("risk_modifier", "1")
+    form.set("grace_period_days", "2")
+    form.set("escalation_assignee_after_days", "0")
+    form.set("escalation_admin_after_days", "2")
+    form.set("escalation_department_after_days", "5")
     form.set("description", name.trim())
     form.set("checklist", JSON.stringify(checklist))
     form.set("active", "true")
+    form.set("reason", "Create PM schedule")
 
     try {
       await createPMSchedule(form)
@@ -123,12 +132,12 @@ export function ScheduleModal({ open, onClose }: { open: boolean; onClose: () =>
         {/* Header */}
         <div className="flex items-center justify-between border-b px-6 py-4">
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Add maintenance schedule</h2>
-            <p className="mt-0.5 text-sm text-gray-500">
+            <h2 className="text-lg font-bold text-foreground">Add maintenance schedule</h2>
+            <p className="mt-0.5 text-sm text-muted-foreground">
               Define a recurring task list. The next-due date advances automatically each time you record a log.
             </p>
           </div>
-          <button onClick={onClose} className="ml-4 shrink-0 rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
+          <button onClick={onClose} className="ml-4 shrink-0 rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-muted-foreground">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -184,7 +193,7 @@ export function ScheduleModal({ open, onClose }: { open: boolean; onClose: () =>
               value={firstDueDate}
               onChange={(e) => setFirstDueDate(e.target.value)}
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-muted-foreground">
               When this schedule is first due. After you record maintenance, the next-due date advances by one {getFrequencyLabel(frequency)} interval automatically.
             </p>
           </div>
@@ -192,11 +201,11 @@ export function ScheduleModal({ open, onClose }: { open: boolean; onClose: () =>
           {/* Checklist Tasks */}
           <div>
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-700">Checklist tasks</h3>
+              <h3 className="text-sm font-semibold text-foreground">Checklist tasks</h3>
               <button
                 type="button"
                 onClick={addTask}
-                className="flex items-center gap-1 text-sm font-medium text-teal-600 hover:text-teal-700"
+                className="flex items-center gap-1 text-sm font-medium text-primary hover:text-primary/80"
               >
                 <Plus className="h-4 w-4" />
                 Add task
@@ -205,12 +214,12 @@ export function ScheduleModal({ open, onClose }: { open: boolean; onClose: () =>
 
             <div className="space-y-2">
               {tasks.map((task) => (
-                <div key={task.id} className="flex items-center gap-2 rounded-lg border bg-gray-50 p-2">
+                <div key={task.id} className="flex items-center gap-2 rounded-lg border bg-muted p-2">
                   <Input
                     value={task.text}
                     onChange={(e) => updateTask(task.id, "text", e.target.value)}
                     placeholder={`Task ${task.id}`}
-                    className={`h-9 flex-1 text-sm ${task.text ? "border-blue-400 ring-1 ring-blue-200" : ""}`}
+                    className={`h-9 flex-1 text-sm ${task.text ? "border-info ring-1 ring-info/30" : ""}`}
                   />
 
                   <select
@@ -228,8 +237,8 @@ export function ScheduleModal({ open, onClose }: { open: boolean; onClose: () =>
                     onClick={() => updateTask(task.id, "required", !task.required)}
                     className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-medium transition-colors ${
                       task.required
-                        ? "bg-blue-50 text-blue-600"
-                        : "bg-gray-200 text-gray-400"
+                        ? "bg-info-subtle text-primary"
+                        : "bg-neutral-subtle text-muted-foreground"
                     }`}
                     title={task.required ? "Required" : "Optional"}
                   >
@@ -245,7 +254,7 @@ export function ScheduleModal({ open, onClose }: { open: boolean; onClose: () =>
                   <button
                     type="button"
                     onClick={() => removeTask(task.id)}
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-danger-subtle hover:text-danger-strong"
                     disabled={tasks.length <= 1}
                   >
                     <Trash2 className="h-4 w-4" />
@@ -265,7 +274,7 @@ export function ScheduleModal({ open, onClose }: { open: boolean; onClose: () =>
             type="button"
             onClick={handleSave}
             disabled={!name.trim() || saving}
-            className="bg-teal-600 text-white hover:bg-teal-700"
+            className="bg-primary text-white hover:bg-primary/90"
           >
             {saving ? "Saving..." : "Save schedule"}
           </Button>

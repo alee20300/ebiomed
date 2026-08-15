@@ -58,8 +58,8 @@ export function ChecklistForm({ equipmentId, templateId, templateName, items }: 
       <input type="hidden" name="items" value={JSON.stringify(itemsData)} />
 
       <div>
-        <p className="text-sm font-medium text-gray-500">{templateName}</p>
-        <p className="text-xs text-gray-400">
+        <p className="text-sm font-medium text-muted-foreground">{templateName}</p>
+        <p className="text-xs text-muted-foreground">
           {items.some((i) => i.type === "number" || i.type === "combobox")
             ? "Fill in each item below"
             : "Mark each item as OK or Not OK"}
@@ -76,7 +76,7 @@ export function ChecklistForm({ equipmentId, templateId, templateName, items }: 
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-sm">
                   {item.text}
-                  {item.required && <span className="ml-1 text-red-500 text-xs">*</span>}
+                  {item.required && <span className="ml-1 text-danger-strong text-xs">*</span>}
                 </span>
               </div>
 
@@ -87,8 +87,8 @@ export function ChecklistForm({ equipmentId, templateId, templateName, items }: 
                     onClick={() => setItemResult(item.id, { status: "ok", text: item.text })}
                     className={`flex flex-1 items-center justify-center gap-1 rounded-lg border-2 py-2 text-sm transition-colors ${
                       result?.status === "ok"
-                        ? "border-green-500 bg-green-50 text-green-700"
-                        : "border-gray-200 text-gray-400 hover:border-green-300"
+                        ? "border-success bg-success-subtle text-success-strong"
+                        : "border-border text-muted-foreground hover:border-success"
                     }`}
                   >
                     <Check className="h-4 w-4" /> OK
@@ -98,8 +98,8 @@ export function ChecklistForm({ equipmentId, templateId, templateName, items }: 
                     onClick={() => setItemResult(item.id, { status: "not_ok", text: item.text })}
                     className={`flex flex-1 items-center justify-center gap-1 rounded-lg border-2 py-2 text-sm transition-colors ${
                       result?.status === "not_ok"
-                        ? "border-red-500 bg-red-50 text-red-700"
-                        : "border-gray-200 text-gray-400 hover:border-red-300"
+                        ? "border-danger bg-danger-subtle text-danger-strong"
+                        : "border-border text-muted-foreground hover:border-danger"
                     }`}
                   >
                     <X className="h-4 w-4" /> Not OK
@@ -133,8 +133,8 @@ export function ChecklistForm({ equipmentId, templateId, templateName, items }: 
                     }
                     className={`flex h-9 items-center gap-1 rounded-lg border-2 px-3 text-sm ${
                       result?.status === "not_ok"
-                        ? "border-red-500 bg-red-50 text-red-700"
-                        : "border-gray-200 text-gray-400 hover:border-red-300"
+                        ? "border-danger bg-danger-subtle text-danger-strong"
+                        : "border-border text-muted-foreground hover:border-danger"
                     }`}
                   >
                     <X className="h-4 w-4" /> Flag
@@ -171,8 +171,8 @@ export function ChecklistForm({ equipmentId, templateId, templateName, items }: 
                     }
                     className={`flex h-9 items-center gap-1 rounded-lg border-2 px-3 text-sm ${
                       result?.status === "not_ok"
-                        ? "border-red-500 bg-red-50 text-red-700"
-                        : "border-gray-200 text-gray-400 hover:border-red-300"
+                        ? "border-danger bg-danger-subtle text-danger-strong"
+                        : "border-border text-muted-foreground hover:border-danger"
                     }`}
                   >
                     <X className="h-4 w-4" /> Flag
@@ -185,7 +185,7 @@ export function ChecklistForm({ equipmentId, templateId, templateName, items }: 
       </div>
 
       {failedCount > 0 && (
-        <div className="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+        <div className="flex items-center gap-2 rounded-md border border-warning bg-warning-subtle p-3 text-sm text-warning-strong">
           <AlertCircle className="h-4 w-4" />
           {failedCount} item{failedCount > 1 ? "s" : ""} flagged — a work order will be created
         </div>

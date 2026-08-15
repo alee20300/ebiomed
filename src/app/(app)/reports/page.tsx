@@ -1,121 +1,245 @@
+import Link from "next/link"
 import { redirect } from "next/navigation"
 import { Suspense } from "react"
-import { createClient } from "@/lib/supabase/server"
+import { Activity, Clock, FileCheck, Gauge, ShieldCheck, Wrench } from "lucide-react"
 import { getCurrentUser } from "@/lib/actions/profiles"
-import { ComplianceChart } from "@/components/reports/compliance-chart"
+import { getReportingDashboard, getReportingFilterOptions } from "@/lib/reports/service"
+import { REPORT_LABELS, type ReportId } from "@/lib/reports/definitions"
+import type { EvidenceRow, GroupMetric, KpiValue, ReportingDashboard, ReportingFilters } from "@/lib/reports/calculations"
 import { ReportsDateFilter } from "@/components/reports/reports-date-filter"
+import { ReportBarChart, ReportPieChart } from "@/components/reports/report-charts"
+import { KpiCard, type KpiTone } from "@/components/shared/kpi-card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { buttonVariants } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
-async function ReportsContent({ from, to }: { from?: string; to?: string }) {
-  const supabase = await createClient()
+const REPORTS: ReportId[] = [
+  "executive-summary",
+  "pm-compliance",
+  "asset-reliability",
+  "replacement-planning",
+  "technician-performance",
+  "cost-analysis",
+  "inventory",
+  "compliance-evidence",
+]
 
-  const fromDate = from ? new Date(from).toISOString() : new Date(new Date().setDate(1)).toISOString()
-  const toDate = to ? new Date(new Date(to).setHours(23, 59, 59, 999)).toISOString() : new Date().toISOString()
+const KPI_ICONS = [Clock, Activity, Wrench, Gauge, FileCheck, ShieldCheck]
+const KPI_TONES: KpiTone[] = ["blue", "green", "amber", "violet", "red"]
 
-  const { count: totalPMs } = await supabase
-    .from("pm_schedules")
-    .select("*", { count: "exact", head: true })
-    .eq("active", true)
+function pickReport(value?: string): ReportId {
+  return REPORTS.includes(value as ReportId) ? (value as ReportId) : "executive-summary"
+}
 
-  const { count: completedPMs } = await supabase
-    .from("pm_schedules")
-    .select("*", { count: "exact", head: true })
-    .eq("active", true)
-    .not("last_completed", "is", null)
-
-  const { data: equipmentByStatus } = await supabase.from("equipment").select("status")
-  const { data: recentWOs } = await supabase
-    .from("work_orders")
-    .select("status, created_at, priority")
-    .gte("created_at", fromDate)
-    .lte("created_at", toDate)
-
-  const statusCounts: Record<string, number> = {}
-  equipmentByStatus?.forEach((eq: { status: string }) => {
-    statusCounts[eq.status] = (statusCounts[eq.status] || 0) + 1
+function linkForReport(report: ReportId, filters: ReportingFilters) {
+  const params = new URLSearchParams()
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value) params.set(key, value)
   })
+  params.set("report", report)
+  return `/reports?${params.toString()}`
+}
 
-  const woStatusCounts: Record<string, number> = {}
-  recentWOs?.forEach((wo: { status: string }) => {
-    woStatusCounts[wo.status] = (woStatusCounts[wo.status] || 0) + 1
-  })
+function KpiGrid({ kpis }: { kpis: KpiValue[] }) {
+  return (
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      {kpis.map((kpi, index) => {
+        const Icon = KPI_ICONS[index % KPI_ICONS.length]
+        return (
+          <KpiCard
+            key={kpi.id}
+            title={kpi.label}
+            value={kpi.displayValue}
+            description={kpi.formula}
+            icon={Icon}
+            tone={KPI_TONES[index % KPI_TONES.length]}
+          />
+        )
+      })}
+    </div>
+  )
+}
+
+function MetricTable({ rows, valueLabel = "Value" }: { rows: GroupMetric[]; valueLabel?: string }) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Metric</TableHead>
+          <TableHead className="text-right">{valueLabel}</TableHead>
+          <TableHead>Detail</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {rows.map((row) => (
+          <TableRow key={row.label}>
+            <TableCell className="font-medium">{row.label}</TableCell>
+            <TableCell className="text-right">{Number.isInteger(row.value) ? row.value : row.value.toFixed(1)}</TableCell>
+            <TableCell className="text-muted-foreground">{row.secondary || "—"}</TableCell>
+          </TableRow>
+        ))}
+        {rows.length === 0 && (
+          <TableRow>
+            <TableCell colSpan={3} className="py-8 text-center text-muted-foreground">No data in this range.</TableCell>
+          </TableRow>
+        )}
+      </TableBody>
+    </Table>
+  )
+}
+
+function EvidenceTable({ rows }: { rows: EvidenceRow[] }) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Item</TableHead>
+          <TableHead>Owner</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>Date</TableHead>
+          <TableHead>Evidence</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {rows.map((row) => (
+          <TableRow key={row.id}>
+            <TableCell className="font-medium">{row.item}</TableCell>
+            <TableCell>{row.owner}</TableCell>
+            <TableCell><Badge variant="outline">{row.status}</Badge></TableCell>
+            <TableCell>{row.date ? row.date.slice(0, 10) : "—"}</TableCell>
+            <TableCell className="text-muted-foreground">{row.evidence}</TableCell>
+          </TableRow>
+        ))}
+        {rows.length === 0 && (
+          <TableRow>
+            <TableCell colSpan={5} className="py-8 text-center text-muted-foreground">No evidence in this range.</TableCell>
+          </TableRow>
+        )}
+      </TableBody>
+    </Table>
+  )
+}
+
+function ReportContent({ dashboard, report }: { dashboard: ReportingDashboard; report: ReportId }) {
+  const rows = dashboard.reports[report].rows
+
+  if (report === "pm-compliance") {
+    return (
+      <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
+        <Card>
+          <CardHeader><CardTitle>Completion Mix</CardTitle></CardHeader>
+          <CardContent><ReportPieChart data={dashboard.charts.pmCompliance} /></CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle>PM Compliance Table</CardTitle></CardHeader>
+          <CardContent><MetricTable rows={rows as GroupMetric[]} /></CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (report === "asset-reliability") {
+    return (
+      <div className="grid gap-6 xl:grid-cols-2">
+        <Card>
+          <CardHeader><CardTitle>Downtime by Asset</CardTitle></CardHeader>
+          <CardContent><ReportBarChart data={dashboard.charts.reliabilityByAsset} valueLabel="Downtime hours" /></CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle>Reliability Detail</CardTitle></CardHeader>
+          <CardContent><MetricTable rows={rows as GroupMetric[]} valueLabel="Hours" /></CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (report === "replacement-planning") {
+    return (
+      <Card>
+        <CardHeader><CardTitle>Replacement Planning</CardTitle></CardHeader>
+        <CardContent><MetricTable rows={rows as GroupMetric[]} valueLabel="Priority" /></CardContent>
+      </Card>
+    )
+  }
+
+  if (report === "technician-performance") {
+    return (
+      <div className="grid gap-6 xl:grid-cols-2">
+        <Card>
+          <CardHeader><CardTitle>Workload Hours</CardTitle></CardHeader>
+          <CardContent><ReportBarChart data={dashboard.charts.technicianWorkload} valueLabel="Hours" /></CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle>Technician Workload</CardTitle></CardHeader>
+          <CardContent><MetricTable rows={rows as GroupMetric[]} valueLabel="Hours" /></CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (report === "cost-analysis") {
+    return (
+      <div className="grid gap-6 xl:grid-cols-2">
+        <Card>
+          <CardHeader><CardTitle>Cost by Department</CardTitle></CardHeader>
+          <CardContent><ReportBarChart data={dashboard.charts.costByDepartment} valueLabel="Cost" /></CardContent>
+        </Card>
+        <Card>
+          <CardHeader><CardTitle>Cost Detail</CardTitle></CardHeader>
+          <CardContent><MetricTable rows={rows as GroupMetric[]} valueLabel="Cost" /></CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (report === "compliance-evidence") {
+    return (
+      <Card>
+        <CardHeader><CardTitle>Compliance Evidence</CardTitle></CardHeader>
+        <CardContent><EvidenceTable rows={rows as EvidenceRow[]} /></CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <div className="grid gap-6 xl:grid-cols-2">
+      <Card>
+        <CardHeader><CardTitle>Work Order Mix</CardTitle></CardHeader>
+        <CardContent><ReportPieChart data={dashboard.charts.workOrderMix} /></CardContent>
+      </Card>
+      <Card>
+        <CardHeader><CardTitle>Executive Summary</CardTitle></CardHeader>
+        <CardContent><MetricTable rows={rows as GroupMetric[]} /></CardContent>
+      </Card>
+    </div>
+  )
+}
+
+async function ReportsContent({ filters, report }: { filters: ReportingFilters; report: ReportId }) {
+  const [dashboard, options] = await Promise.all([
+    getReportingDashboard(filters),
+    getReportingFilterOptions(),
+  ])
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>PM Compliance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ComplianceChart completed={completedPMs || 0} total={totalPMs || 0} />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Equipment by Status</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {Object.entries(statusCounts).map(([status, count]) => (
-                <div key={status} className="flex items-center justify-between">
-                  <span className="text-sm capitalize">{status.replace("_", " ")}</span>
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 rounded-full bg-primary" style={{ width: `${(count / (equipmentByStatus?.length || 1)) * 200}px` }} />
-                    <span className="text-sm font-medium">{count}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Work Orders</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {Object.entries(woStatusCounts).map(([status, count]) => (
-                <div key={status} className="flex items-center justify-between">
-                  <span className="text-sm capitalize">{status.replace("_", " ")}</span>
-                  <div className="flex items-center gap-2">
-                    <div className="h-2 rounded-full bg-blue-500" style={{ width: `${(count / Math.max((recentWOs?.length || 1), 1)) * 200}px` }} />
-                    <span className="text-sm font-medium">{count}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {(!recentWOs || recentWOs.length === 0) && (
-              <p className="py-8 text-center text-sm text-gray-500">No work orders in selected date range.</p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Summary</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <p className="text-sm text-gray-500">Total Equipment</p>
-              <p className="text-2xl font-bold">{equipmentByStatus?.length || 0}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">Active PM Schedules</p>
-              <p className="text-2xl font-bold">{totalPMs || 0}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">PM Compliance Rate</p>
-              <p className="text-2xl font-bold">
-                {totalPMs ? Math.round(((completedPMs || 0) / totalPMs) * 100) : 0}%
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+      <ReportsDateFilter options={options} report={report} />
+      <div className="flex flex-wrap gap-2">
+        {REPORTS.map((item) => (
+          <Link
+            key={item}
+            href={linkForReport(item, filters)}
+            className={cn(buttonVariants({ variant: item === report ? "default" : "outline", size: "sm" }))}
+          >
+            {REPORT_LABELS[item]}
+          </Link>
+        ))}
       </div>
+      <KpiGrid kpis={dashboard.kpis} />
+      <ReportContent dashboard={dashboard} report={report} />
     </div>
   )
 }
@@ -123,21 +247,24 @@ async function ReportsContent({ from, to }: { from?: string; to?: string }) {
 export default async function ReportsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ from?: string; to?: string }>
+  searchParams: Promise<ReportingFilters & { report?: string }>
 }) {
   const user = await getCurrentUser()
   if (user?.role === "viewer") redirect("/dashboard")
 
-  const { from, to } = await searchParams
+  const params = await searchParams
+  const report = pickReport(params.report)
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h2 className="text-2xl font-bold tracking-tight">Reports</h2>
-        <ReportsDateFilter />
+      <div>
+        <h2 className="text-2xl font-bold tracking-tight">Management Reports</h2>
+        <p className="mt-1 text-sm text-muted-foreground">
+          KPI-backed dashboards for executive, maintenance, cost, and compliance review.
+        </p>
       </div>
       <Suspense fallback={<Skeleton className="h-96 w-full" />}>
-        <ReportsContent from={from} to={to} />
+        <ReportsContent filters={params} report={report} />
       </Suspense>
     </div>
   )

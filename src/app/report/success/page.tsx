@@ -1,34 +1,49 @@
 import Link from "next/link"
-import { CheckCircle } from "lucide-react"
-import { buttonVariants } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { CheckCircle2 } from "lucide-react"
 
 export default async function ReportSuccessPage({
   searchParams,
 }: {
-  searchParams: Promise<{ wo?: string }>
+  searchParams: Promise<{ ref?: string; complaint?: string }>
 }) {
-  const params = await searchParams
+  const { ref, complaint } = await searchParams
+  const reference = ref || complaint?.slice(0, 8)
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <Card className="w-full max-w-md text-center">
-        <CardHeader>
-          <CheckCircle className="mx-auto h-16 w-16 text-green-500" />
-          <CardTitle className="text-xl">Fault Report Submitted</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <p className="text-sm text-gray-600">
-            A work order has been created and the biomedical team will be notified.
+    <div className="flex min-h-screen items-center justify-center bg-muted p-4">
+      <div className="max-w-md space-y-6 text-center">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-success-subtle">
+          <CheckCircle2 className="h-8 w-8 text-success-strong" />
+        </div>
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold text-foreground">Complaint Submitted</h1>
+          <p className="text-muted-foreground">
+            Your fault report has been submitted for review. The biomedical team will review it and create a work order if needed.
           </p>
-          {params.wo && (
-            <p className="font-mono text-sm text-gray-500">Work Order: {params.wo.slice(0, 8)}</p>
+          {reference && (
+            <div className="rounded-lg border bg-white p-4">
+              <p className="text-xs font-medium uppercase text-muted-foreground">Tracking Reference</p>
+              <p className="mt-1 font-mono text-lg font-semibold text-foreground">{reference}</p>
+            </div>
           )}
-          <div className="flex justify-center gap-3">
-            <Link href="/report" className={cn(buttonVariants({ variant: "outline" }))}>Report Another</Link>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+        <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+          {ref && (
+            <Link
+              href={`/request-status/${encodeURIComponent(ref)}`}
+              className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            >
+              Track Status
+            </Link>
+          )}
+          <Link
+            href="/report"
+            className="inline-flex items-center justify-center rounded-md border px-4 py-2 text-sm font-medium text-primary hover:text-primary/80"
+          >
+            Report Another Issue
+          </Link>
+        </div>
+      </div>
     </div>
   )
 }

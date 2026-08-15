@@ -5,8 +5,15 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { logAudit } from "@/lib/actions/audit"
 
+function safeNextPath(value: FormDataEntryValue | null) {
+  return typeof value === "string" && value.startsWith("/") && !value.startsWith("//")
+    ? value
+    : "/dashboard"
+}
+
 export async function login(formData: FormData) {
   const supabase = await createClient()
+  const next = safeNextPath(formData.get("next"))
 
   const { error } = await supabase.auth.signInWithPassword({
     email: formData.get("email") as string,
@@ -14,11 +21,35 @@ export async function login(formData: FormData) {
   })
 
   if (error) {
-    return redirect("/login?error=" + encodeURIComponent(error.message))
+    return redirect(`/login?error=${encodeURIComponent(error.message)}&next=${encodeURIComponent(next)}`)
   }
 
   revalidatePath("/", "layout")
-  redirect("/dashboard")
+  redirect(next)
+}
+
+export async function loginWithAuthentik(formData: FormData) {
+  const supabase = await createClient()
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "http://192.168.1.6:3002"
+  const next = safeNextPath(formData.get("next"))
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "keycloak",
+    options: {
+      redirectTo: `${siteUrl}/auth/callback?next=${encodeURIComponent(next)}`,
+      scopes: "openid profile email",
+    },
+  })
+
+  if (error || !data.url) {
+    redirect(`/login?error=${encodeURIComponent(error?.message ?? "Authentik sign-in is unavailable")}&next=${encodeURIComponent(next)}`)
+  }
+
+  // GoTrue reaches the HTTP-only local OIDC bridge through localhost. Replace
+  // only that origin before sending the browser there so LAN devices do not
+  // try to open their own localhost.
+  const authentikUrl = process.env.AUTHENTIK_BROWSER_URL ?? "http://192.168.1.6:9003"
+  redirect(data.url.replace("http://localhost:9003", authentikUrl))
 }
 
 export async function signup(formData: FormData) {
@@ -29,7 +60,11 @@ export async function signup(formData: FormData) {
   const fullName = formData.get("fullName") as string
   const role = (formData.get("role") as string) || "technician"
 
-  const { data, error } = await supabase.auth.signUp({ email, password })
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { full_name: fullName } },
+  })
 
   if (error) {
     return redirect("/login?error=" + encodeURIComponent(error.message))

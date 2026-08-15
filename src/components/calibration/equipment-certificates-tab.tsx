@@ -4,10 +4,11 @@ import { useState, useEffect } from "react"
 import { getCertificates } from "@/lib/actions/certificates"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { buttonVariants } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
+import { statusColor } from "@/lib/utils/format"
 import { FileText, Download, ExternalLink } from "lucide-react"
 import { format, isPast, parseISO } from "date-fns"
-import { cn } from "@/lib/utils"
 import type { Certificate } from "@/lib/types"
 
 interface Props {
@@ -59,9 +60,7 @@ export function EquipmentCertificatesTab({ equipmentId }: Props) {
                 </div>
                 <Badge variant="outline" className={cn(
                   "text-xs",
-                  actualStatus === "valid" && "bg-green-100 text-green-800",
-                  actualStatus === "expired" && "bg-red-100 text-red-800",
-                  actualStatus === "revoked" && "bg-gray-100 text-gray-800",
+                  statusColor(actualStatus),
                 )}>
                   {actualStatus}
                 </Badge>
@@ -80,12 +79,15 @@ export function EquipmentCertificatesTab({ equipmentId }: Props) {
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" className="h-7 text-xs" asChild>
-                    <a href={`/api/certificates/${cert.id}`} target="_blank" rel="noopener">
-                      <Download className="mr-1 h-3 w-3" />
-                      Download PDF
-                    </a>
-                  </Button>
+                  <a
+                    href={`/api/certificates/${cert.id}`}
+                    target="_blank"
+                    rel="noopener"
+                    className={cn(buttonVariants({ variant: "outline", size: "sm" }), "h-7 text-xs")}
+                  >
+                    <Download className="mr-1 h-3 w-3" />
+                    Download PDF
+                  </a>
                 </div>
               </div>
             </CardContent>

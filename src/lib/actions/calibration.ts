@@ -5,9 +5,11 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getCurrentUser } from "@/lib/actions/profiles"
 import { logAudit } from "@/lib/actions/audit"
-import { recordSignature } from "@/lib/actions/signatures"
+import { requirePermission } from "@/lib/actions/permissions"
+import { recordSignature, verifyPassword } from "@/lib/actions/signatures"
 import { generateCertificate } from "@/lib/actions/certificates"
-import { referenceStandardSchema, calibrationBatchSchema } from "@/lib/schemas/calibration"
+import { referenceStandardSchema, calibrationBatchSchema, calibrationInvestigationSchema } from "@/lib/schemas/calibration"
+import { evaluateTolerance } from "@/lib/utils/tolerance"
 import type { ReferenceStandard, CalibrationReading } from "@/lib/types"
 
 // ============================================================
@@ -38,11 +40,12 @@ export async function getReferenceStandardById(id: string): Promise<ReferenceSta
 
 export async function createReferenceStandard(formData: FormData) {
   const supabase = await createClient()
+  await requirePermission({ action: "write", resource: "calibration" }, "/reference-standards")
   const raw = Object.fromEntries(formData)
   const parsed = referenceStandardSchema.safeParse(raw)
 
   if (!parsed.success) {
-    const msg = parsed.error.errors.map((e) => e.message).join(", ")
+    const msg = parsed.error.issues.map((e) => e.message).join(", ")
     return redirect(`/reference-standards?error=${encodeURIComponent(msg)}`)
   }
 
@@ -76,11 +79,12 @@ export async function createReferenceStandard(formData: FormData) {
 
 export async function updateReferenceStandard(id: string, formData: FormData) {
   const supabase = await createClient()
+  await requirePermission({ action: "write", resource: "calibration" }, "/reference-standards")
   const raw = Object.fromEntries(formData)
   const parsed = referenceStandardSchema.safeParse(raw)
 
   if (!parsed.success) {
-    const msg = parsed.error.errors.map((e) => e.message).join(", ")
+    const msg = parsed.error.issues.map((e) => e.message).join(", ")
     return redirect(`/reference-standards?error=${encodeURIComponent(msg)}`)
   }
 
@@ -113,6 +117,7 @@ export async function updateReferenceStandard(id: string, formData: FormData) {
 
 export async function deleteReferenceStandard(id: string, reason: string) {
   const supabase = await createClient()
+  await requirePermission({ action: "write", resource: "calibration" }, "/reference-standards")
   await supabase.from("reference_standards").update({ deleted_at: new Date().toISOString() }).eq("id", id)
 
   await logAudit("reference_standards", id, "delete", [], reason || "Deleted")
@@ -137,6 +142,7 @@ export async function getCalibrationReadings(equipmentId: string): Promise<Calib
 
 export async function submitCalibrationBatch(formData: FormData) {
   const supabase = await createClient()
+  await requirePermission({ action: "write", resource: "calibration" }, `/equipment/${formData.get("equipment_id") || ""}`)
   const raw = Object.fromEntries(formData)
 
   // Parse readings array from form
@@ -160,12 +166,18 @@ export async function submitCalibrationBatch(formData: FormData) {
   })
 
   if (!parsed.success) {
-    const msg = parsed.error.errors.map((e) => e.message).join(", ")
+    const msg = parsed.error.issues.map((e) => e.message).join(", ")
     return redirect(`/equipment/${raw.equipment_id}?error=${encodeURIComponent(msg)}`)
   }
 
   const user = await getCurrentUser()
   if (!user) return redirect(`/equipment/${parsed.data.equipment_id}?error=${encodeURIComponent("Not authenticated")}`)
+
+  const password = String(raw.reauth_password || "")
+  const verified = password.length > 0 && await verifyPassword(password)
+  if (!verified) {
+    return redirect(`/equipment/${parsed.data.equipment_id}?error=${encodeURIComponent("Re-authentication is required to approve calibration")}`)
+  }
 
   // Validate reference standard is not expired
   const { data: refStd } = await supabase
@@ -185,7 +197,7 @@ export async function submitCalibrationBatch(formData: FormData) {
   // Evaluate each reading against tolerance
   let hasFailedReadings = false
   const readingRecords = parsed.data.readings.map((r: typeof parsed.data.readings[number]) => {
-    const passed = r.measured_value >= r.tolerance_min && r.measured_value <= r.tolerance_max
+    const { passed } = evaluateTolerance(r.measured_value, r.expected_value, r.tolerance_min, r.tolerance_max)
     if (!passed) hasFailedReadings = true
     return {
       equipment_id: parsed.data.equipment_id,
@@ -199,6 +211,7 @@ export async function submitCalibrationBatch(formData: FormData) {
       passed,
       notes: r.notes || null,
       recorded_by: user.id,
+      investigation_status: passed ? "not_required" : "required",
     }
   })
 
@@ -252,11 +265,14 @@ export async function submitCalibrationBatch(formData: FormData) {
   ], parsed.data.reason)
 
   // Record signature
-  await recordSignature("calibration", parsed.data.equipment_id, "Calibrated")
+  await recordSignature("calibration", parsed.data.equipment_id, "Calibrated", parsed.data.reason)
 
   // Auto-generate certificate if all readings passed
   if (!hasFailedReadings) {
-    await generateCertificate(parsed.data.equipment_id, null)
+    await generateCertificate(parsed.data.equipment_id, null, {
+      reason: parsed.data.reason,
+      reauthPassword: password,
+    })
   }
 
   revalidatePath("/equipment")
@@ -270,8 +286,46 @@ export async function submitCalibrationBatch(formData: FormData) {
   redirect(`/equipment/${parsed.data.equipment_id}`)
 }
 
+export async function recordCalibrationInvestigation(formData: FormData) {
+  const supabase = await createClient()
+  const user = await getCurrentUser()
+  if (!user) return redirect("/login")
+  const raw = Object.fromEntries(formData)
+  await requirePermission({ action: "write", resource: "calibration" }, `/equipment/${raw.equipment_id || ""}`)
+
+  const parsed = calibrationInvestigationSchema.safeParse(raw)
+  if (!parsed.success) {
+    return redirect(`/equipment/${raw.equipment_id}?error=${encodeURIComponent(parsed.error.issues.map((e) => e.message).join(", "))}`)
+  }
+
+  const { error } = await supabase
+    .from("calibration_readings")
+    .update({
+      investigation_status: parsed.data.investigation_status,
+      investigation_notes: parsed.data.investigation_notes,
+      corrective_action: parsed.data.corrective_action || null,
+      investigated_by: user.id,
+      investigated_at: new Date().toISOString(),
+    })
+    .eq("id", parsed.data.reading_id)
+    .eq("equipment_id", parsed.data.equipment_id)
+
+  if (error) {
+    return redirect(`/equipment/${parsed.data.equipment_id}?error=${encodeURIComponent(error.message)}`)
+  }
+
+  await logAudit("calibration_readings", parsed.data.reading_id, "update", [
+    { field: "investigation_status", newValue: parsed.data.investigation_status },
+  ], parsed.data.reason)
+
+  revalidatePath(`/equipment/${parsed.data.equipment_id}`)
+  revalidatePath("/dashboard")
+  redirect(`/equipment/${parsed.data.equipment_id}`)
+}
+
 export async function updateEquipmentCalibrationParams(equipmentId: string, formData: FormData) {
   const supabase = await createClient()
+  await requirePermission({ action: "write", resource: "calibration" }, `/equipment/${equipmentId}`)
   const raw = Object.fromEntries(formData)
 
   const calibration_interval_days = parseInt(raw.calibration_interval_days as string) || 365

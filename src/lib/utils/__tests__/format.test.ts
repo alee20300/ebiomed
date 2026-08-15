@@ -1,51 +1,75 @@
 import { describe, it, expect } from "vitest"
-import { formatDateTime, formatDate, statusColor, priorityColor } from "@/lib/utils/format"
+import {
+  formatDateTime,
+  formatDate,
+  statusColor,
+  priorityColor,
+  statusTone,
+  priorityTone,
+} from "@/lib/utils/format"
+
+describe("statusTone", () => {
+  it("maps healthy terminal states to success", () => {
+    expect(statusTone("active")).toBe("success")
+    expect(statusTone("completed")).toBe("success")
+    expect(statusTone("approved")).toBe("success")
+    expect(statusTone("certified")).toBe("success")
+  })
+
+  it("maps in-flight and attention states to warning", () => {
+    expect(statusTone("in_progress")).toBe("warning")
+    expect(statusTone("on_hold")).toBe("warning")
+    expect(statusTone("under_repair")).toBe("warning")
+    expect(statusTone("pending_review")).toBe("warning")
+  })
+
+  it("maps failure states to danger", () => {
+    expect(statusTone("out_of_tolerance")).toBe("danger")
+    expect(statusTone("rejected")).toBe("danger")
+    expect(statusTone("retired")).toBe("danger")
+  })
+
+  it("maps informational states to info", () => {
+    expect(statusTone("open")).toBe("info")
+    expect(statusTone("triaged")).toBe("info")
+    expect(statusTone("converted")).toBe("info")
+  })
+
+  it("falls back to neutral for unknown status", () => {
+    expect(statusTone("nonexistent")).toBe("neutral")
+    expect(statusTone("cancelled")).toBe("neutral")
+  })
+})
 
 describe("statusColor", () => {
-  it("returns green for active", () => {
-    expect(statusColor("active")).toBe("bg-green-100 text-green-800")
+  it("resolves a tone to token-backed classes", () => {
+    expect(statusColor("completed")).toBe("bg-success-subtle text-success-strong")
+    expect(statusColor("nonexistent")).toBe("bg-neutral-subtle text-neutral-strong")
   })
 
-  it("returns green for completed", () => {
-    expect(statusColor("completed")).toBe("bg-green-100 text-green-800")
+  it("never emits raw palette classes", () => {
+    for (const status of ["open", "in_progress", "retired", "certified", "whatever"]) {
+      expect(statusColor(status)).not.toMatch(/-\d{2,3}\b/)
+    }
+  })
+})
+
+describe("priorityTone", () => {
+  it("escalates low → critical across the tone scale", () => {
+    expect(priorityTone("low")).toBe("neutral")
+    expect(priorityTone("medium")).toBe("info")
+    expect(priorityTone("high")).toBe("warning")
+    expect(priorityTone("critical")).toBe("danger")
   })
 
-  it("returns purple for under_repair", () => {
-    expect(statusColor("under_repair")).toBe("bg-purple-100 text-purple-800")
-  })
-
-  it("returns red for out_of_tolerance", () => {
-    expect(statusColor("out_of_tolerance")).toBe("bg-red-100 text-red-800")
-  })
-
-  it("returns emerald for certified", () => {
-    expect(statusColor("certified")).toBe("bg-emerald-100 text-emerald-800")
-  })
-
-  it("returns gray for unknown status", () => {
-    expect(statusColor("nonexistent")).toBe("bg-gray-100 text-gray-800")
-  })
-
-  it("returns yellow for in_progress", () => {
-    expect(statusColor("in_progress")).toBe("bg-yellow-100 text-yellow-800")
+  it("falls back to neutral for unknown priority", () => {
+    expect(priorityTone("nonexistent")).toBe("neutral")
   })
 })
 
 describe("priorityColor", () => {
-  it("returns gray for low", () => {
-    expect(priorityColor("low")).toBe("bg-gray-100 text-gray-700")
-  })
-
-  it("returns blue for medium", () => {
-    expect(priorityColor("medium")).toBe("bg-blue-100 text-blue-700")
-  })
-
-  it("returns orange for high", () => {
-    expect(priorityColor("high")).toBe("bg-orange-100 text-orange-700")
-  })
-
-  it("returns red for critical", () => {
-    expect(priorityColor("critical")).toBe("bg-red-100 text-red-700")
+  it("resolves a tone to token-backed classes", () => {
+    expect(priorityColor("critical")).toBe("bg-danger-subtle text-danger-strong")
   })
 })
 

@@ -23,7 +23,7 @@ export async function EquipmentHistoryTab({ equipmentId }: Props) {
 
   if (workOrders.length === 0) {
     return (
-      <div className="py-8 text-center text-gray-500">
+      <div className="py-8 text-center text-muted-foreground">
         No work orders for this equipment yet.
       </div>
     )
@@ -35,17 +35,17 @@ export async function EquipmentHistoryTab({ equipmentId }: Props) {
         <Link
           key={wo.id}
           href={`/work-orders/${wo.id}`}
-          className="flex items-center justify-between rounded-lg border p-3 hover:bg-gray-50"
+          className="flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50"
         >
           <div>
             <div className="flex items-center gap-2">
               <StatusBadge status={wo.status} />
               <PriorityBadge priority={wo.priority} />
-              <span className="text-xs text-gray-500 uppercase">{wo.type}</span>
+              <span className="text-xs text-muted-foreground uppercase">{wo.type}</span>
             </div>
             <p className="mt-1 line-clamp-1 text-sm">{wo.description}</p>
           </div>
-          <span className="text-xs text-gray-500">{formatDateTime(wo.created_at)}</span>
+          <span className="text-xs text-muted-foreground">{formatDateTime(wo.created_at)}</span>
         </Link>
       ))}
     </div>

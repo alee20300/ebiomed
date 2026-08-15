@@ -21,7 +21,7 @@ export async function EquipmentPMTab({ equipmentId }: Props) {
 
   if (schedules.length === 0) {
     return (
-      <div className="py-8 text-center text-gray-500">
+      <div className="py-8 text-center text-muted-foreground">
         No active PM schedules for this equipment.
       </div>
     )
@@ -35,28 +35,28 @@ export async function EquipmentPMTab({ equipmentId }: Props) {
           <Link
             key={pm.id}
             href={`/pm-schedules/${pm.id}`}
-            className="flex items-center justify-between rounded-lg border p-3 hover:bg-gray-50"
+            className="flex items-center justify-between rounded-lg border p-3 hover:bg-muted/50"
           >
             <div>
               <p className="text-sm font-medium">
                 Every {pm.frequency_days} days
                 {pm.description && ` — ${pm.description}`}
               </p>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-muted-foreground">
                 Last completed: {formatDate(pm.last_completed)}
               </p>
             </div>
             <div className="text-right">
               <p className={`text-sm font-medium ${
-                status === "overdue" ? "text-red-600" :
-                status === "due" ? "text-yellow-600" :
-                "text-gray-600"
+                status === "overdue" ? "text-danger-strong" :
+                status === "due" ? "text-warning-strong" :
+                "text-muted-foreground"
               }`}>
                 {status === "overdue" ? "Overdue" :
                  status === "due" ? "Due today" :
                  status === "upcoming" ? "Due soon" : "Upcoming"}
               </p>
-              <p className="text-xs text-gray-500">Next: {formatDate(pm.next_due)}</p>
+              <p className="text-xs text-muted-foreground">Next: {formatDate(pm.next_due)}</p>
             </div>
           </Link>
         )

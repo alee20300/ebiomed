@@ -90,11 +90,11 @@ export function BarcodeScanner() {
       {mode === "scan" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-600">Point camera at barcode</p>
+            <p className="text-sm text-muted-foreground">Point camera at barcode</p>
             <Button variant="ghost" size="sm" onClick={stopScanner}><X className="mr-1 h-4 w-4" /> Cancel</Button>
           </div>
           <div id="barcode-reader" className="mx-auto max-w-sm overflow-hidden rounded-lg" />
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-danger-strong">{error}</p>}
         </div>
       )}
 

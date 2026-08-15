@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import type { ChecklistTemplate } from "@/lib/types"
-import { Trash2, Plus, X, Check } from "lucide-react"
+import { Trash2, Plus, Check } from "lucide-react"
 
 type FieldType = "checkbox" | "number" | "combobox"
 
@@ -43,17 +43,9 @@ export function ChecklistTemplateManager({ equipmentId, templates }: Props) {
     setNewTasks(newTasks.filter((t) => t.id !== id))
   }
 
-  const updateTask = (id: string, field: string, value: any) => {
+  const updateTask = <K extends keyof TaskDraft>(id: string, field: K, value: TaskDraft[K]) => {
     setNewTasks(newTasks.map((t) => (t.id === id ? { ...t, [field]: value } : t)))
   }
-
-  const buildItems = () =>
-    newTasks.filter((t) => t.text.trim()).map((t) => ({
-      text: t.text.trim(),
-      type: t.type,
-      required: t.required,
-      options: t.type === "combobox" ? t.options : undefined,
-    }))
 
   const itemsJson = JSON.stringify(
     newTasks.filter((t) => t.text.trim()).map((t, i) => ({
@@ -77,11 +69,11 @@ export function ChecklistTemplateManager({ equipmentId, templates }: Props) {
       </div>
 
       {templates.length === 0 && !showNew && (
-        <p className="text-sm text-gray-500">No checklist templates defined.</p>
+        <p className="text-sm text-muted-foreground">No checklist templates defined.</p>
       )}
 
       {templates.map((tpl) => (
-        <div key={tpl.id} className="rounded-lg border bg-gray-50 p-4">
+        <div key={tpl.id} className="rounded-lg border bg-muted p-4">
           <form action={saveChecklistTemplate} className="space-y-3">
             <input type="hidden" name="equipment_id" value={equipmentId} />
             <input type="hidden" name="template_id" value={tpl.id} />
@@ -108,7 +100,7 @@ export function ChecklistTemplateManager({ equipmentId, templates }: Props) {
             <div>
               <Label htmlFor={`items-${tpl.id}`}>
                 Checklist Items
-                {tpl.items.some((i) => (i as any).type && (i as any).type !== "checkbox")
+                {tpl.items.some((i) => i.type && i.type !== "checkbox")
                   ? " (configured with custom types below)"
                   : ""}
               </Label>
@@ -133,7 +125,7 @@ export function ChecklistTemplateManager({ equipmentId, templates }: Props) {
       ))}
 
       {showNew && (
-        <div className="rounded-lg border bg-gray-50 p-4">
+        <div className="rounded-lg border bg-muted p-4">
           <form action={saveChecklistTemplate} className="space-y-4">
             <input type="hidden" name="equipment_id" value={equipmentId} />
             <input type="hidden" name="items" value={itemsJson} />
@@ -171,7 +163,7 @@ export function ChecklistTemplateManager({ equipmentId, templates }: Props) {
             <div>
               <div className="mb-2 flex items-center justify-between">
                 <Label>Checklist tasks</Label>
-                <button type="button" onClick={addTask} className="flex items-center gap-1 text-xs font-medium text-teal-600 hover:text-teal-700">
+                <button type="button" onClick={addTask} className="flex items-center gap-1 text-xs font-medium text-primary hover:text-primary/80">
                   <Plus className="h-3 w-3" /> Add task
                 </button>
               </div>
@@ -187,7 +179,7 @@ export function ChecklistTemplateManager({ equipmentId, templates }: Props) {
                       />
                       <select
                         value={task.type}
-                        onChange={(e) => updateTask(task.id, "type", e.target.value)}
+                        onChange={(e) => updateTask(task.id, "type", e.target.value as FieldType)}
                         className="h-8 w-24 rounded-lg border border-input bg-card px-2 text-xs"
                       >
                         <option value="checkbox">Checkbox</option>
@@ -198,7 +190,7 @@ export function ChecklistTemplateManager({ equipmentId, templates }: Props) {
                         type="button"
                         onClick={() => updateTask(task.id, "required", !task.required)}
                         className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs ${
-                          task.required ? "bg-blue-50 text-blue-600" : "bg-gray-200 text-gray-400"
+                          task.required ? "bg-info-subtle text-primary" : "bg-neutral-subtle text-muted-foreground"
                         }`}
                       >
                         {task.required ? <Check className="h-3 w-3" /> : "−"}
@@ -206,14 +198,14 @@ export function ChecklistTemplateManager({ equipmentId, templates }: Props) {
                       <button
                         type="button"
                         onClick={() => removeTask(task.id)}
-                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500"
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-danger-subtle hover:text-danger-strong"
                       >
                         <Trash2 className="h-3 w-3" />
                       </button>
                     </div>
                     {task.type === "combobox" && (
                       <div className="mt-1 flex items-center gap-1">
-                        <span className="text-xs text-gray-400">Options:</span>
+                        <span className="text-xs text-muted-foreground">Options:</span>
                         <Input
                           value={(task.options || []).join(", ")}
                           onChange={(e) =>
